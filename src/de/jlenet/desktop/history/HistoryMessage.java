@@ -33,6 +33,9 @@ public class HistoryMessage implements Comparable<HistoryMessage> {
 		time = Long.parseLong(xpp.getAttributeValue("", "time"));
 		contents = xpp.nextText();
 	}
+	public HistoryMessage(long time) {
+		this.time = time;
+	}
 	public static void main(String[] args) {
 		HistoryMessage hm = new HistoryMessage(
 				"<message id=\"cy340-160\" to=\"felix@dogcraft.de/JLENetDesktop\" from=\"felix@dogcraft.de/Spark 2.6.3\" type=\"chat\"><body>ja, mir gehts gut</body><thread>cCYqy8</thread><x xmlns=\"jabber:x:event\"><offline/><composing/></x></message>",
@@ -85,6 +88,15 @@ public class HistoryMessage implements Comparable<HistoryMessage> {
 		int val = Long.compare(time, o.time);
 		if (val != 0) {
 			return val;
+		}
+		if (contents == o.contents) {
+			return 0;
+		}
+
+		if (contents == null) {
+			return -1;
+		} else if (o.contents == null) {
+			return 1;
 		}
 		return contents.compareTo(o.contents);
 	}

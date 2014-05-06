@@ -13,6 +13,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Set;
+import java.util.TreeSet;
 
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
@@ -361,5 +363,42 @@ public class History {
 		}
 
 		return 1 << (BITS_PER_LEVEL * (LEVELS - i));
+	}
+	public Set<HistoryMessage> getMessages(long from, final long to) {
+		HistoryMessage dummyFrom = new HistoryMessage(from);
+		HistoryMessage dummyTo = new HistoryMessage(to + 1);
+
+		TreeSet<HistoryMessage> result = new TreeSet<HistoryMessage>();
+		int toHour = getMyCount(to / BASE);
+		int fromHour = getMyCount(from / BASE);
+		for (int i = fromHour; i <= toHour; i++) {
+			addMessages(getRootBlock(i), i == fromHour ? recurseTime(from
+					/ BASE) : 0, i == toHour ? recurseTime(to / BASE) : -1,
+					result, dummyFrom, dummyTo);
+		}
+		return result;
+
+	}
+	private void addMessages(HistoryBlock block, long from, long to,
+			Set<HistoryMessage> target, HistoryMessage dummyFrom,
+			HistoryMessage dummyTo) {
+		if (block instanceof HistoryLeafNode) {
+			target.addAll(((HistoryLeafNode) block).getMessages().subSet(
+					dummyFrom, dummyTo));
+			return;
+		}
+		int myFrom = getMyCount(from);
+		long recurse = recurseTime(to);
+		if (to == -1) {
+			recurse = -1;
+		}
+		int myTo = to == -1L ? CHILDREN_PER_LEVEL - 1 : getMyCount(to);
+		HistoryTreeBlock htb = (HistoryTreeBlock) block;
+		for (int i = myFrom; i <= myTo; i++) {
+			addMessages(htb.getBlock(i), i == myFrom ? recurseTime(from) : 0,
+					i == myTo ? recurse : -1, target, dummyFrom, dummyTo);
+
+		}
+
 	}
 }

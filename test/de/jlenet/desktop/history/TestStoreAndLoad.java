@@ -53,11 +53,23 @@ public class TestStoreAndLoad {
 			h.store();
 			assertEquals(base.listFiles().length, h.getRootBlock(5).filesCount);
 		}
-		History h2 = new History(base);
-		assertEquals(base.listFiles().length, h2.getRootBlock(5).filesCount);
-		if (true) {
-			return;
+		for (int i = 0; i < 2048; i++) {
+			assertEquals(
+					i + 1,
+					h.getMessages(History.TEST_BASE,
+							History.TEST_BASE + 60 * 60 * 1000L * i + 10)
+							.size());
 		}
+		History h2 = new History(base);
+		for (int i = 0; i < 2048; i++) {
+			assertEquals(
+					i + 1,
+					h.getMessages(History.TEST_BASE,
+							History.TEST_BASE + 60 * 60 * 1000L * i + 10)
+							.size());
+		}
+
+		assertEquals(base.listFiles().length, h2.getRootBlock(5).filesCount);
 		try {
 			h2.compact("5", (HistoryTreeBlock) h2.getRootBlock(5));
 		} catch (TransformerConfigurationException e) {
@@ -71,6 +83,14 @@ public class TestStoreAndLoad {
 		}
 		assertEquals(1, h2.getRootBlock(5).filesCount);
 		assertEquals(1, base.listFiles().length);
+		h2 = new History(base);
+		for (int i = 0; i < 2048; i++) {
+			assertEquals(
+					i + 1,
+					h.getMessages(History.TEST_BASE,
+							History.TEST_BASE + 60 * 60 * 1000L * i + 10)
+							.size());
+		}
 
 	}
 	@Test
@@ -93,7 +113,10 @@ public class TestStoreAndLoad {
 				base, "5_14_13_15_1.xml"));
 		write("<?xml version=\"1.0\" encoding=\"UTF-8\"?><history/>", new File(
 				base, "5_14_13_15_3.xml"));
-		new History(base);
+		assertEquals(
+				0,
+				new History(base).getMessages(0,
+						History.TEST_BASE + History.BASE * 1000L).size());
 		assertArrayEquals(new File[]{new File(base, "5_14_13_15_1.xml"),
 				new File(base, "5_14_13_15_3.xml")}, base.listFiles());
 	}
