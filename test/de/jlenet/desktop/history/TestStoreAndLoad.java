@@ -1,0 +1,111 @@
+package de.jlenet.desktop.history;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerFactoryConfigurationError;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.xml.sax.SAXException;
+
+import static org.junit.Assert.*;
+public class TestStoreAndLoad {
+	File base = new File("testHistory");
+	@Before
+	public void clean() {
+		if (base.exists()) {
+			rm(base);
+		}
+		base.mkdirs();
+	}
+	private void rm(File target) {
+		for (File f : target.listFiles()) {
+			if (f.isDirectory()) {
+				rm(f);
+			}
+			f.delete();
+		}
+
+	}
+	@Test
+	public void testStoreAndLoad() {
+		History h = new History(base);
+		h.addMessage(new HistoryMessage("<message>test</message>",
+				History.TEST_BASE));
+		h.store();
+		System.out.println("Editing");
+		for (int i = 0; i < 32; i++) {
+			h.addMessage(new HistoryMessage("<message>test</message>",
+					History.TEST_BASE + 60 * 60 * 1000 * i));
+		}
+		h.store();
+	}
+
+	@Test
+	public void testStoreAndLoad2() {
+		History h = new History(base);
+		for (int i = 0; i < 2048; i++) {
+			h.addMessage(new HistoryMessage("<message>test" + i + "</message>",
+					History.TEST_BASE + 60 * 60 * 1000L * i + 10));
+			h.store();
+			assertEquals(base.listFiles().length, h.getRootBlock(5).filesCount);
+		}
+		History h2 = new History(base);
+		assertEquals(base.listFiles().length, h2.getRootBlock(5).filesCount);
+		if (true) {
+			return;
+		}
+		try {
+			h2.compact("5", (HistoryTreeBlock) h2.getRootBlock(5));
+		} catch (TransformerConfigurationException e) {
+			e.printStackTrace();
+		} catch (TransformerFactoryConfigurationError e) {
+			e.printStackTrace();
+		} catch (SAXException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		assertEquals(1, h2.getRootBlock(5).filesCount);
+		assertEquals(1, base.listFiles().length);
+
+	}
+	@Test
+	public void testUncleanRec() {
+		write("<?xml version=\"1.0\" encoding=\"UTF-8\"?><history/>", new File(
+				base, "5_14_13_15.xml.ready"));
+		write("<?xml version=\"1.0\" encoding=\"UTF-8\"?><history/>", new File(
+				base, "5_14_13_15_1.xml"));
+		write("<?xml version=\"1.0\" encoding=\"UTF-8\"?><history/>", new File(
+				base, "5_14_13_15_3.xml"));
+		new History(base);
+		assertArrayEquals(new File[]{new File(base, "5_14_13_15.xml")},
+				base.listFiles());
+	}
+	@Test
+	public void testUncleanRec2() {
+		write("<?xml version=\"1.0\" encoding=\"UTF-8\"?><history/>", new File(
+				base, "5_14_13_15.xml.new"));
+		write("<?xml version=\"1.0\" encoding=\"UTF-8\"?><history/>", new File(
+				base, "5_14_13_15_1.xml"));
+		write("<?xml version=\"1.0\" encoding=\"UTF-8\"?><history/>", new File(
+				base, "5_14_13_15_3.xml"));
+		new History(base);
+		assertArrayEquals(new File[]{new File(base, "5_14_13_15_1.xml"),
+				new File(base, "5_14_13_15_3.xml")}, base.listFiles());
+	}
+	private void write(String string, File file) {
+		FileWriter fw;
+		try {
+			fw = new FileWriter(file);
+			fw.write(string);
+			fw.close();
+		} catch (IOException e) {
+			throw new Error(e);
+		}
+
+	}
+}
