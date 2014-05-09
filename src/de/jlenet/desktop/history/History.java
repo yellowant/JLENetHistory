@@ -110,6 +110,9 @@ public class History {
 		}
 		return hb;
 	}
+	public int getLastCount() {
+		return years.size();
+	}
 
 	private void ensureSize(int count) {
 		years.ensureCapacity(count);
@@ -163,7 +166,10 @@ public class History {
 				HistoryTreeBlock hb = ((HistoryTreeBlock) historyBlock);
 				int count = hb.ownFile ? 1 : 0;
 				for (int i = 0; i < CHILDREN_PER_LEVEL; i++) {
-					HistoryBlock child = hb.getBlock(i);
+					HistoryBlock child = hb.getBlock(i, true);
+					if (child == null) {
+						continue;
+					}
 					count += reconcile(child, prefix + "_" + i, maxfiles);
 				}
 				if (count >= maxfiles) {
@@ -211,7 +217,11 @@ public class History {
 		if (historyBlock instanceof HistoryTreeBlock) {
 			HistoryTreeBlock ht = (HistoryTreeBlock) historyBlock;
 			for (int i = 0; i < CHILDREN_PER_LEVEL; i++) {
-				clean(ht.getBlock(i), prefix + "_" + i);
+				HistoryBlock block = ht.getBlock(i, true);
+				if (block == null) {
+					continue;
+				}
+				clean(block, prefix + "_" + i);
 			}
 		}
 		new File(base, prefix + ".xml").delete();

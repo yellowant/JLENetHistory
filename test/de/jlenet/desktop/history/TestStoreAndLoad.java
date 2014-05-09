@@ -1,8 +1,10 @@
 package de.jlenet.desktop.history;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerFactoryConfigurationError;
@@ -44,7 +46,37 @@ public class TestStoreAndLoad {
 		h.store();
 		h = new History(base);
 	}
+	@Test
+	public void testStoreAndLoad3() throws TransformerConfigurationException,
+			TransformerFactoryConfigurationError, SAXException, IOException {
+		History h = new History(base);
+		for (int i = 0; i < 512; i++) {
+			h.addMessage(new HistoryMessage("<message>test" + i + "</message>",
+					History.TEST_BASE + 60 * 60 * 1000L * i
+							* History.CHILDREN_PER_LEVEL
+							* History.CHILDREN_PER_LEVEL + 10));
+			h.store();
+			int sum = 0;
+			for (int j = 5; j < h.getLastCount(); j++) {
+				sum += h.getRootBlock(j).filesCount;
+			}
+			assertEquals(base.listFiles().length, sum);
+		}
 
+		History h2 = new History(base);
+		File f = new File(base, "6.xml");
+		byte[] oldData = readFile(f);
+		h2.compact("6", (HistoryTreeBlock) h2.getRootBlock(6));
+		byte[] newData = readFile(f);
+		assertArrayEquals(oldData, newData);
+	}
+	private byte[] readFile(File f) throws FileNotFoundException, IOException {
+		byte[] buf = new byte[(int) f.length()];
+		RandomAccessFile raf = new RandomAccessFile(f, "r");
+		raf.readFully(buf);
+		raf.close();
+		return buf;
+	}
 	@Test
 	public void testStoreAndLoad2() {
 		History h = new History(base);

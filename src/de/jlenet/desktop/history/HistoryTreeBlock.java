@@ -85,8 +85,14 @@ public class HistoryTreeBlock extends HistoryBlock {
 	}
 
 	public HistoryBlock getBlock(int count) {
+		return getBlock(count, false);
+	}
+	public HistoryBlock getBlock(int count, boolean peek) {
 		HistoryBlock hb = children[count];
 		if (hb == null) {
+			if (peek) {
+				return null;
+			}
 			if (level + 1 >= LEVELS) {
 				hb = new HistoryLeafNode();
 			} else {
@@ -131,13 +137,14 @@ public class HistoryTreeBlock extends HistoryBlock {
 			try {
 				FileReader fr = new FileReader(myPosition);
 				fr.skip(offset);
-				System.out.println("Loading from " + myPosition + ":" + offset);
 				pamp.setInput(fr, offset, myPosition);
 				pamp.nextTag();// root
 				pamp.nextTag();// firstChild
 				children = new HistoryBlock[History.CHILDREN_PER_LEVEL];
 				load(pamp);
-				System.out.println(pamp.getDepth());
+				if (pamp.getDepth() != 1) {
+					System.err.println("Something is badly wrong");
+				}
 				fr.close();
 
 			} catch (XmlPullParserException e) {
