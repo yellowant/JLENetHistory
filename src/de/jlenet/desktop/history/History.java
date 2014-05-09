@@ -6,7 +6,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.Reader;
 import java.io.Writer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -33,7 +32,6 @@ import org.jivesoftware.smack.filter.PacketIDFilter;
 import org.jivesoftware.smack.packet.IQ;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
-import org.xmlpull.mxp1.MXParser;
 import org.xmlpull.v1.XmlPullParser;
 
 public class History {
@@ -221,21 +219,23 @@ public class History {
 		historyBlock.ownFile = false;
 
 	}
-	private static HistoryBlock loadBlock(Reader input, int level)
-			throws IOException {
+	private static HistoryBlock loadBlock(File f, int level) throws IOException {
 
 		try {
-			XmlPullParser xpp = new MXParser();
-			xpp.setInput(input);
+			FileReader input = new FileReader(f);
+
+			PositionAwareXMLPullParser xpp = new PositionAwareMXParser();
+			xpp.setInput(input, 0, f);
 
 			xpp.nextTag();
 			HistoryBlock htb = HistoryBlock.parse(level, xpp);
 			if (!xpp.getName().equals("history")) {
-				throw new IOException(xpp.getName());
+				throw new IOException(xpp.getName() + ";" + xpp.getPosition());
 			}
 			if (xpp.next() != XmlPullParser.END_DOCUMENT) {
 				throw new IOException();
 			}
+			input.close();
 			return htb;
 		} catch (Exception e) {
 			throw new IOException(e);
@@ -326,14 +326,12 @@ public class History {
 						f.getName().length() - 4);
 
 				try {
-					FileReader input = new FileReader(f);
 					String[] parts = prefix.split("_");
-					HistoryBlock block2 = loadBlock(input, parts.length - 1);
+					HistoryBlock block2 = loadBlock(f, parts.length - 1);
 					if (block2 != null) {
 						block2.ownFile = true;
 						block2.filesCount = 1;
 					}
-					input.close();
 					if (parts.length == 1) {
 						int block = Integer.parseInt(prefix);
 						ensureSize(block);

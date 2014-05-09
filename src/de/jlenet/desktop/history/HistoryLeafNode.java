@@ -69,4 +69,9 @@ public class HistoryLeafNode extends HistoryBlock {
 		hmsg = ts;
 	}
 
+	@Override
+	public void ensureLoaded() {
+		// is always loaded
+	}
+
 }

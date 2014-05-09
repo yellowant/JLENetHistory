@@ -42,6 +42,7 @@ public class TestStoreAndLoad {
 					History.TEST_BASE + 60 * 60 * 1000 * i));
 		}
 		h.store();
+		h = new History(base);
 	}
 
 	@Test

@@ -24,16 +24,19 @@ public abstract class HistoryBlock {
 		modified = true;
 	}
 
-	public static HistoryBlock parse(int i, XmlPullParser xpp)
+	public static HistoryBlock parse(int i, PositionAwareXMLPullParser xpp)
 			throws XmlPullParserException, IOException {
 		String chksum = xpp.getAttributeValue(null, "checksum");
+		int start = xpp.getBeforePosition();
 		if (xpp.nextTag() == XmlPullParser.END_TAG) {
 			return null;
 		}
 		if (xpp.getName().equals("msg")) {
 			return new HistoryLeafNode(xpp);
 		} else {
-			return new HistoryTreeBlock(i, xpp);
+			return new HistoryTreeBlock(i, xpp, start);
 		}
 	}
+
+	public abstract void ensureLoaded();
 }

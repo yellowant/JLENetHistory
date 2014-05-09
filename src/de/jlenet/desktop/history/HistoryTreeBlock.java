@@ -1,5 +1,7 @@
 package de.jlenet.desktop.history;
 
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -19,12 +21,39 @@ public class HistoryTreeBlock extends HistoryBlock {
 	public HistoryTreeBlock(int level) {
 		this.level = level;
 	}
-	public HistoryTreeBlock(int level, XmlPullParser xpp)
+	int offset;
+	File myPosition;
+	/**
+	 * 
+	 * Creates a new HistoryTreeBlock.
+	 * 
+	 * @param level
+	 * @param xpp
+	 *            positioned on first element
+	 * @param start
+	 * @throws XmlPullParserException
+	 * @throws IOException
+	 */
+	public HistoryTreeBlock(int level, PositionAwareXMLPullParser xpp, int start)
 			throws XmlPullParserException, IOException {
+		offset = start;
+		myPosition = xpp.getFile();
+		this.level = level;
+		if (level == 1) {
+			children = null;
+			while (xpp.getEventType() == XmlPullParser.START_TAG) {
+				xpp.skipSubTree();
+				xpp.nextTag();
+			}
+			return;
+		}
 		if (level > 3) {
 			throw new Error();
 		}
-		this.level = level;
+		load(xpp);
+	}
+	private void load(PositionAwareXMLPullParser xpp)
+			throws XmlPullParserException, IOException, Error {
 		while (xpp.getEventType() == XmlPullParser.START_TAG) {
 			children[Integer.parseInt(xpp.getAttributeValue("", "id"))] = HistoryBlock
 					.parse(level + 1, xpp);
@@ -64,6 +93,8 @@ public class HistoryTreeBlock extends HistoryBlock {
 				hb = new HistoryTreeBlock(level + 1);
 			}
 			children[count] = hb;
+		} else {
+			hb.ensureLoaded();
 		}
 		return hb;
 	}
@@ -73,6 +104,7 @@ public class HistoryTreeBlock extends HistoryBlock {
 		for (int i = 0; i < children.length; i++) {
 			if (children[i] != null) {
 				atti.addAttribute("", "", "id", "CDATA", Integer.toString(i));
+				children[i].ensureLoaded();
 				atti.addAttribute("", "", "checksum", "CDATA",
 						History.beautifyChecksum(children[i].getChecksum()));
 				hd.startElement("", "", "block", atti);
@@ -91,5 +123,28 @@ public class HistoryTreeBlock extends HistoryBlock {
 	}
 	public void setBlock(int index, HistoryBlock htb) {
 		children[index] = htb;
+	}
+	@Override
+	public void ensureLoaded() {
+		if (children == null) {
+			PositionAwareMXParser pamp = new PositionAwareMXParser();
+			try {
+				FileReader fr = new FileReader(myPosition);
+				fr.skip(offset);
+				System.out.println("Loading from " + myPosition + ":" + offset);
+				pamp.setInput(fr, offset, myPosition);
+				pamp.nextTag();// root
+				pamp.nextTag();// firstChild
+				children = new HistoryBlock[History.CHILDREN_PER_LEVEL];
+				load(pamp);
+				System.out.println(pamp.getDepth());
+				fr.close();
+
+			} catch (XmlPullParserException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 }
