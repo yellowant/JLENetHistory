@@ -183,8 +183,9 @@ public class History {
 				System.out.println("storing: " + prefix + ";" + base);
 			}
 			historyBlock.modified = false;
-			export(historyBlock, new FileOutputStream(new File(base, prefix
-					+ ".xml")));
+			File newFile = new File(base, prefix + ".xml.new");
+			export(historyBlock, new FileOutputStream(newFile));
+			newFile.renameTo(new File(base, prefix + ".xml"));
 			return historyBlock.filesCount = 1;
 		} catch (Exception e) {
 			throw new Error(e);
@@ -305,6 +306,7 @@ public class History {
 	private void load() {
 		for (File f : base.listFiles()) {
 			if (f.getName().endsWith(".xml.new")) {
+				System.out.println("Warning: deleting corrupt data");
 				f.delete();
 			}
 			if (f.getName().endsWith(".xml.ready")) {
