@@ -85,9 +85,11 @@ public class HistoryMessage implements Comparable<HistoryMessage> {
 		if (this == o) {
 			return 0;
 		}
-		int val = Long.compare(time, o.time);
-		if (val != 0) {
-			return val;
+		if (time > o.time) {
+			return 1;
+		}
+		if (time < o.time) {
+			return -1;
 		}
 		if (contents == o.contents) {
 			return 0;
