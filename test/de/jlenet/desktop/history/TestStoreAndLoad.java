@@ -36,13 +36,13 @@ public class TestStoreAndLoad {
 	public void testStoreAndLoad() {
 		History h = new History(base);
 		h.addMessage(new HistoryMessage("<message>test</message>",
-				History.TEST_BASE, "romeo@montagues.lit"));
+				History.TEST_BASE, "romeo@montagues.lit", false));
 		h.store();
 		System.out.println("Editing");
 		for (int i = 0; i < 32; i++) {
 			h.addMessage(new HistoryMessage("<message>test</message>",
 					History.TEST_BASE + 60 * 60 * 1000 * i,
-					"romeo@montagues.lit"));
+					"romeo@montagues.lit", false));
 		}
 		h.store();
 		h = new History(base);
@@ -56,7 +56,7 @@ public class TestStoreAndLoad {
 					History.TEST_BASE + 60 * 60 * 1000L * i
 							* History.CHILDREN_PER_LEVEL
 							* History.CHILDREN_PER_LEVEL + 10,
-					"romeo@montagues.lit"));
+					"romeo@montagues.lit", false));
 			h.store();
 			int sum = 0;
 			for (int j = 5; j < h.getLastCount(); j++) {
@@ -85,7 +85,7 @@ public class TestStoreAndLoad {
 		for (int i = 0; i < 2048; i++) {
 			h.addMessage(new HistoryMessage("<message>test" + i + "</message>",
 					History.TEST_BASE + 60 * 60 * 1000L * i + 10,
-					"romeo@montagues.lit"));
+					"romeo@montagues.lit", true));
 			h.store();
 			assertEquals(base.listFiles().length, h.getRootBlock(5).filesCount);
 		}
@@ -161,11 +161,11 @@ public class TestStoreAndLoad {
 	public void testJidGet() {
 		History h = new History(base);
 		h.addMessage(new HistoryMessage("romeoMSG", History.BASE,
-				"romeo@montagues.lit"));
+				"romeo@montagues.lit", false));
 		h.addMessage(new HistoryMessage("julietMSG", History.BASE,
-				"juliet@capulets.lit"));
+				"juliet@capulets.lit", true));
 		h.addMessage(new HistoryMessage("julietMSG1", History.BASE,
-				"juliet@capulets.lit"));
+				"juliet@capulets.lit", true));
 		h.store();
 		assertEquals(
 				1,
