@@ -32,7 +32,7 @@ public class HistoryMessage implements Comparable<HistoryMessage> {
 	public HistoryMessage(String contents, long time, String correspondent) {
 		this.time = time;
 		this.contents = contents;
-		this.correspondent = correspondent;
+		this.correspondent = StringUtils.parseBareAddress(correspondent);
 	}
 	public HistoryMessage(XmlPullParser xpp) throws XmlPullParserException,
 			IOException {
@@ -138,5 +138,8 @@ public class HistoryMessage implements Comparable<HistoryMessage> {
 	}
 	public String getContents() {
 		return contents;
+	}
+	public String getCorrespondent() {
+		return correspondent;
 	}
 }

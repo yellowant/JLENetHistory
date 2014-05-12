@@ -92,7 +92,7 @@ public class TestStoreAndLoad {
 		for (int i = 0; i < 2048; i++) {
 			assertEquals(
 					i + 1,
-					h.getMessages(History.TEST_BASE,
+					h.getMessages("romeo@montagues.lit", History.TEST_BASE,
 							History.TEST_BASE + 60 * 60 * 1000L * i + 10)
 							.size());
 		}
@@ -100,7 +100,7 @@ public class TestStoreAndLoad {
 		for (int i = 0; i < 2048; i++) {
 			assertEquals(
 					i + 1,
-					h.getMessages(History.TEST_BASE,
+					h.getMessages("romeo@montagues.lit", History.TEST_BASE,
 							History.TEST_BASE + 60 * 60 * 1000L * i + 10)
 							.size());
 		}
@@ -123,7 +123,7 @@ public class TestStoreAndLoad {
 		for (int i = 0; i < 2048; i++) {
 			assertEquals(
 					i + 1,
-					h.getMessages(History.TEST_BASE,
+					h.getMessages("romeo@montagues.lit", History.TEST_BASE,
 							History.TEST_BASE + 60 * 60 * 1000L * i + 10)
 							.size());
 		}
@@ -141,6 +141,7 @@ public class TestStoreAndLoad {
 		assertArrayEquals(new File[]{new File(base, "5_14_13_15.xml")},
 				base.listFiles());
 	}
+
 	@Test
 	public void testUncleanRec2() {
 		write("<?xml version=\"1.0\" encoding=\"UTF-8\"?><history/>", new File(
@@ -151,11 +152,35 @@ public class TestStoreAndLoad {
 				base, "5_14_13_15_3.xml"));
 		assertEquals(
 				0,
-				new History(base).getMessages(0,
+				new History(base).getMessages("romeo@montagues.lit", 0,
 						History.TEST_BASE + History.BASE * 1000L).size());
 		assertArrayEquals(new File[]{new File(base, "5_14_13_15_1.xml"),
 				new File(base, "5_14_13_15_3.xml")}, base.listFiles());
 	}
+	@Test
+	public void testJidGet() {
+		History h = new History(base);
+		h.addMessage(new HistoryMessage("romeoMSG", History.BASE,
+				"romeo@montagues.lit"));
+		h.addMessage(new HistoryMessage("julietMSG", History.BASE,
+				"juliet@capulets.lit"));
+		h.addMessage(new HistoryMessage("julietMSG1", History.BASE,
+				"juliet@capulets.lit"));
+		h.store();
+		assertEquals(
+				1,
+				new History(base).getMessages("romeo@montagues.lit", 0,
+						History.TEST_BASE + History.BASE * 1000L).size());
+		assertEquals(
+				2,
+				new History(base).getMessages("juliet@capulets.lit", 0,
+						History.TEST_BASE + History.BASE * 1000L).size());
+		assertEquals(
+				0,
+				new History(base).getMessages("mercutio@montagues.lit", 0,
+						History.TEST_BASE + History.BASE * 1000L).size());
+	}
+
 	private void write(String string, File file) {
 		FileWriter fw;
 		try {
