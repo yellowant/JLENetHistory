@@ -156,4 +156,7 @@ public class HistoryMessage implements Comparable<HistoryMessage> {
 	public String getCorrespondent() {
 		return correspondent;
 	}
+	public boolean isOutgoing() {
+		return isOutgoing;
+	}
 }
