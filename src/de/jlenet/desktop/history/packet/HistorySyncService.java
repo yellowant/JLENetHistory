@@ -117,6 +117,7 @@ public class HistorySyncService {
 				hss.setTo(sync.getFrom());
 				hss.setPacketID(sync.getPacketID());
 				theConnection.sendPacket(hss);
+				h.store();
 
 				if (DEBUG_SYNC) {
 					System.out.println("now Have: " + hln.getMessages().size());
