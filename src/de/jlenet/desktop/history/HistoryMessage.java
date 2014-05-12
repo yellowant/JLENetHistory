@@ -9,6 +9,7 @@ import javax.xml.transform.sax.TransformerHandler;
 
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.util.PacketParserUtils;
+import org.jivesoftware.smack.util.StringUtils;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 import org.xmlpull.mxp1.MXParser;
@@ -20,17 +21,23 @@ public class HistoryMessage implements Comparable<HistoryMessage> {
 	byte[] checksum;
 
 	String contents;
-	public HistoryMessage(Message mes, long time) {
+	String correspondent;
+	public HistoryMessage(Message mes, long time, boolean isOutgoing) {
 		this.time = time;
 		contents = mes.toXML();
+		correspondent = StringUtils.parseBareAddress(isOutgoing
+				? mes.getTo()
+				: mes.getFrom());
 	}
-	public HistoryMessage(String contents, long time) {
+	public HistoryMessage(String contents, long time, String correspondent) {
 		this.time = time;
 		this.contents = contents;
+		this.correspondent = correspondent;
 	}
 	public HistoryMessage(XmlPullParser xpp) throws XmlPullParserException,
 			IOException {
 		time = Long.parseLong(xpp.getAttributeValue("", "time"));
+		correspondent = xpp.getAttributeValue(null, "jid");
 		contents = xpp.nextText();
 	}
 	public HistoryMessage(long time) {
@@ -38,8 +45,8 @@ public class HistoryMessage implements Comparable<HistoryMessage> {
 	}
 	public static void main(String[] args) {
 		HistoryMessage hm = new HistoryMessage(
-				"<message id=\"cy340-160\" to=\"felix@dogcraft.de/JLENetDesktop\" from=\"felix@dogcraft.de/Spark 2.6.3\" type=\"chat\"><body>ja, mir gehts gut</body><thread>cCYqy8</thread><x xmlns=\"jabber:x:event\"><offline/><composing/></x></message>",
-				System.currentTimeMillis());
+				"<message id=\"cy340-160\" to=\"juliet@capulets.lit/JLENetDesktop\" from=\"romeo@montegues.lit/Spark 2.6.3\" type=\"chat\"><body>ja, mir gehts gut</body><thread>cCYqy8</thread><x xmlns=\"jabber:x:event\"><offline/><composing/></x></message>",
+				System.currentTimeMillis(), "romeo@montegues.lit");
 		System.out.println(hm.getMessage().getBody());
 	}
 	public Message getMessage() {
@@ -107,6 +114,7 @@ public class HistoryMessage implements Comparable<HistoryMessage> {
 		atti.addAttribute("", "", "time", "CDATA", Long.toString(time));
 		atti.addAttribute("", "", "checksum", "CDATA",
 				History.beautifyChecksum(getChecksum()));
+		atti.addAttribute("", "", "jid", "CDATA", correspondent);
 		hd.startElement("", "", "msg", atti);
 		atti.clear();
 		hd.startCDATA();
@@ -119,6 +127,8 @@ public class HistoryMessage implements Comparable<HistoryMessage> {
 		StringBuffer xml = new StringBuffer();
 		xml.append("<msg time=\"");
 		xml.append(time);
+		xml.append("\" jid=\"");
+		xml.append(correspondent);
 		xml.append("\" checksum=\"");
 		xml.append(History.beautifyChecksum(getChecksum()));
 		xml.append("\"><![CDATA[");//

@@ -36,12 +36,13 @@ public class TestStoreAndLoad {
 	public void testStoreAndLoad() {
 		History h = new History(base);
 		h.addMessage(new HistoryMessage("<message>test</message>",
-				History.TEST_BASE));
+				History.TEST_BASE, "romeo@montagues.lit"));
 		h.store();
 		System.out.println("Editing");
 		for (int i = 0; i < 32; i++) {
 			h.addMessage(new HistoryMessage("<message>test</message>",
-					History.TEST_BASE + 60 * 60 * 1000 * i));
+					History.TEST_BASE + 60 * 60 * 1000 * i,
+					"romeo@montagues.lit"));
 		}
 		h.store();
 		h = new History(base);
@@ -54,7 +55,8 @@ public class TestStoreAndLoad {
 			h.addMessage(new HistoryMessage("<message>test" + i + "</message>",
 					History.TEST_BASE + 60 * 60 * 1000L * i
 							* History.CHILDREN_PER_LEVEL
-							* History.CHILDREN_PER_LEVEL + 10));
+							* History.CHILDREN_PER_LEVEL + 10,
+					"romeo@montagues.lit"));
 			h.store();
 			int sum = 0;
 			for (int j = 5; j < h.getLastCount(); j++) {
@@ -82,7 +84,8 @@ public class TestStoreAndLoad {
 		History h = new History(base);
 		for (int i = 0; i < 2048; i++) {
 			h.addMessage(new HistoryMessage("<message>test" + i + "</message>",
-					History.TEST_BASE + 60 * 60 * 1000L * i + 10));
+					History.TEST_BASE + 60 * 60 * 1000L * i + 10,
+					"romeo@montagues.lit"));
 			h.store();
 			assertEquals(base.listFiles().length, h.getRootBlock(5).filesCount);
 		}

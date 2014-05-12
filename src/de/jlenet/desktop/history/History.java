@@ -121,30 +121,7 @@ public class History {
 		}
 	}
 	public static final long TEST_BASE = (1398959418266L / BASE) * BASE;
-	public static void main(String[] args)
-			throws TransformerConfigurationException, SAXException,
-			TransformerFactoryConfigurationError, IOException {
-		// 1398959418266 = 1.5.2014, 17:50+n
-		// loadBlock(input);
-		History hi = new History(new File("history"));
-		HistoryMessage hm = new HistoryMessage(
-				"<message id=\"cy340-160\" to=\"felix@dogcraft.de/JLENetDesktop\" from=\"felix@dogcraft.de/Spark 2.6.3\" type=\"chat\"><body>message</body></message>",
-				TEST_BASE);
-		HistoryMessage hm2 = new HistoryMessage(
-				"<message id=\"cy340-161\" to=\"felix@dogcraft.de/JLENetDesktop\" from=\"felix@dogcraft.de/Spark 2.6.3\" type=\"chat\"><body>message2</body></message>",
-				TEST_BASE + 2);
-		HistoryMessage hm3 = new HistoryMessage(
-				"<message id=\"cy340-162\" to=\"felix@dogcraft.de/JLENetDesktop\" from=\"felix@dogcraft.de/Spark 2.6.3\" type=\"chat\"><body>message3</body></message>",
-				TEST_BASE + 3);
-		hi.addMessage(hm);
-		hi.addMessage(hm2);
 
-		hi.store();
-		hi = new History(new File("history1"));
-		hi.addMessage(hm);
-		hi.addMessage(hm3);
-		hi.store();
-	}
 	public void store() {
 		for (int i = 0; i < years.size(); i++) {
 			if (years.get(i) != null) {

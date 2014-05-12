@@ -40,11 +40,6 @@ public class HistorySyncSet extends IQ {
 		sw.write("</syncSet>");
 		return sw.toString();
 	}
-	public static void main(String[] args) {
-		HistorySyncSet hss = new HistorySyncSet(0, null);
-		hss.messages.add(new HistoryMessage("<msg>]]>", 0));
-		System.out.println(hss.getChildElementXML());
-	}
 	public long getHour() {
 		return hour;
 	}
