@@ -81,6 +81,7 @@ public class HistoryMessage implements Comparable<HistoryMessage> {
 		}
 		try {
 			MessageDigest md = MessageDigest.getInstance("SHA1");
+			md.update(isOutgoing ? (byte) 1 : 0);
 			md.update(Long.toString(time).getBytes());
 			md.update(contents.getBytes());
 			checksum = md.digest();
