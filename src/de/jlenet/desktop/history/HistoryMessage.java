@@ -138,9 +138,9 @@ public class HistoryMessage implements Comparable<HistoryMessage> {
 		xml.append("\" jid=\"");
 		xml.append(correspondent);
 		if (isOutgoing) {
-			xml.append("\" isOutgoing=\"y");
+			xml.append("\" outgoing=\"y");
 		} else {
-			xml.append("\" isOutgoing=\"n");
+			xml.append("\" outgoing=\"n");
 		}
 
 		xml.append("\" checksum=\"");
