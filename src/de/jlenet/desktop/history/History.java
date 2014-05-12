@@ -162,7 +162,9 @@ public class History {
 			historyBlock.modified = false;
 			File newFile = new File(base, prefix + ".xml.new");
 			export(historyBlock, new FileOutputStream(newFile));
-			newFile.renameTo(new File(base, prefix + ".xml"));
+			File newFileName = new File(base, prefix + ".xml");
+			newFileName.delete();
+			newFile.renameTo(newFileName);
 			return historyBlock.filesCount = 1;
 		} catch (Exception e) {
 			throw new Error(e);
