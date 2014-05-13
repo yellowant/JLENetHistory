@@ -1,9 +1,10 @@
 package de.jlenet.desktop.history;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
@@ -212,7 +213,8 @@ public class History {
 	private static HistoryBlock loadBlock(File f, int level) throws IOException {
 
 		try {
-			FileReader input = new FileReader(f);
+			InputStreamReader input = new InputStreamReader(
+					new FileInputStream(f), "UTF-8");
 
 			PositionAwareXMLPullParser xpp = new PositionAwareMXParser();
 			xpp.setInput(input, 0, f);
@@ -234,7 +236,7 @@ public class History {
 	public static void export(HistoryBlock hb, OutputStream os)
 			throws TransformerFactoryConfigurationError,
 			TransformerConfigurationException, SAXException, IOException {
-		OutputStreamWriter wr = new OutputStreamWriter(os);
+		OutputStreamWriter wr = new OutputStreamWriter(os, "UTF-8");
 		TransformerHandler hd = createSax(wr);
 
 		hd.startDocument();

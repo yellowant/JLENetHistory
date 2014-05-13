@@ -1,8 +1,9 @@
 package de.jlenet.desktop.history;
 
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -135,7 +136,8 @@ public class HistoryTreeBlock extends HistoryBlock {
 		if (children == null) {
 			PositionAwareMXParser pamp = new PositionAwareMXParser();
 			try {
-				FileReader fr = new FileReader(myPosition);
+				InputStreamReader fr = new InputStreamReader(
+						new FileInputStream(myPosition), "UTF-8");
 				fr.skip(offset);
 				pamp.setInput(fr, offset, myPosition);
 				pamp.nextTag();// root
