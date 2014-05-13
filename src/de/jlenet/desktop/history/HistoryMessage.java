@@ -105,6 +105,12 @@ public class HistoryMessage implements Comparable<HistoryMessage> {
 		if (time < o.time) {
 			return -1;
 		}
+		if (isOutgoing && !o.isOutgoing) {
+			return 1;
+		}
+		if (!isOutgoing && o.isOutgoing) {
+			return -1;
+		}
 		if (contents == o.contents) {
 			return 0;
 		}
