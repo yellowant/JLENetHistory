@@ -23,9 +23,11 @@ public class HistoryMessage implements Comparable<HistoryMessage> {
 	String contents;
 	String correspondent;
 	boolean isOutgoing;
+	Message parsed = null;
 
 	public HistoryMessage(Message mes, long time, boolean isOutgoing) {
 		this.time = time;
+		parsed = mes;
 		contents = mes.toXML();
 		correspondent = StringUtils.parseBareAddress(isOutgoing
 				? mes.getTo()
@@ -56,8 +58,12 @@ public class HistoryMessage implements Comparable<HistoryMessage> {
 		System.out.println(hm.getMessage().getBody());
 	}
 	public Message getMessage() {
+		if (parsed != null) {
+			return parsed;
+		}
 		XmlPullParser xpp = new MXParser();
 		try {
+			xpp.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, true);
 			xpp.setInput(new StringReader(contents));
 			xpp.nextTag();
 		} catch (XmlPullParserException e) {
@@ -67,9 +73,11 @@ public class HistoryMessage implements Comparable<HistoryMessage> {
 		}
 
 		try {
-			Message parseMessage = (Message) PacketParserUtils
-					.parseMessage(xpp);
-			return parseMessage;
+			parsed = (Message) PacketParserUtils.parseMessage(xpp);
+			if (xpp.getDepth() != 1) {
+				System.err.println("Warning: unclean pull parser");
+			}
+			return parsed;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
