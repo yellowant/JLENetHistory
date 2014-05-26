@@ -14,6 +14,7 @@ import org.jivesoftware.smack.provider.ProviderManager;
 import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.ServiceDiscoveryManager;
 
+import de.jlenet.desktop.history.Debug;
 import de.jlenet.desktop.history.History;
 import de.jlenet.desktop.history.HistoryLeafNode;
 import de.jlenet.desktop.history.HistoryMessage;
@@ -47,7 +48,6 @@ public class HistorySyncService {
 			}
 
 		}, new PacketTypeFilter(HistorySyncQuery.class));
-		final boolean DEBUG_SYNC = false;
 
 		// sync service
 		theConnection.addPacketListener(new PacketListener() {
@@ -60,7 +60,7 @@ public class HistorySyncService {
 				}
 
 				HistorySyncSet sync = (HistorySyncSet) packet;
-				if (DEBUG_SYNC) {
+				if (Debug.ENABLED) {
 					System.out.println("sync pack");
 				}
 				if (sync.getType() != IQ.Type.SET) {
@@ -68,7 +68,7 @@ public class HistorySyncService {
 				}
 				HistoryLeafNode hln = (HistoryLeafNode) h.getAnyBlock(
 						sync.getHour() * History.BASE, History.LEVELS);
-				if (DEBUG_SYNC) {
+				if (Debug.ENABLED) {
 					System.out.println("Have: " + hln.getMessages().size());
 					System.out.println("Got: " + sync.getMessages().size());
 				}
@@ -119,7 +119,7 @@ public class HistorySyncService {
 				theConnection.sendPacket(hss);
 				h.store();
 
-				if (DEBUG_SYNC) {
+				if (Debug.ENABLED) {
 					System.out.println("now Have: " + hln.getMessages().size());
 					System.out.println("adding: " + forMe.size());
 					System.out.println("for other: " + forOther.size());

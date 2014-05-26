@@ -1,45 +1,77 @@
 <!DOCTYPE project>
 <project name="JLETests" default="pack" basedir=".">
-    <property name="JUNIT" value="/home/jle/binaries/junit"/>
-    <property name="SMACK" value="/home/jle/binaries"/>
-	
+	<property name="JUNIT" value="/home/jle/binaries/junit" />
+	<property name="SMACK" value="/home/jle/binaries" />
+
 	<target name="compile-test" depends="compile">
 		<mkdir dir="test-bin" />
-		<javac includeantruntime="false" srcdir="test" destdir="test-bin" debuglevel="lines">
+		<javac includeantruntime="false" srcdir="test" destdir="test-bin" debug="on" debuglevel="lines">
 			<classpath refid="classpath.test" />
+			<classpath>
+				<pathelement location="bin"/>
+			</classpath>
 		</javac>
 	</target>
 	<target name="compile">
 		<mkdir dir="bin" />
-		<javac includeantruntime="false" srcdir="src" destdir="bin" debuglevel="lines">
+		<javac includeantruntime="false" srcdir="src:release-src" destdir="bin">
 			<classpath refid="classpath.base" />
 		</javac>
 	</target>
+
+	<target name="compile-debug">
+		<mkdir dir="debug-bin" />
+		<javac includeantruntime="false" srcdir="src:debug-src" destdir="debug-bin" debug="on" debuglevel="lines,vars">
+			<classpath refid="classpath.base" />
+		</javac>
+	</target>
+
 	<path id="classpath.base">
-		<pathelement location="bin" />
 		<pathelement location="${SMACK}/smack.jar" />
 		<pathelement location="${SMACK}/smackx.jar" />
 	</path>
 	<path id="classpath.test">
 		<pathelement location="${JUNIT}/junit.jar" />
 		<pathelement location="${JUNIT}/org.hamcrest.core_1.1.0.v20090501071000.jar" />
-		
+
 		<!--<pathelement location="C:\\eclipse-helios\\plugins\\org.junit_4.8.1.v4_8_1_v20100427-1100\\junit.jar" />
 		<pathelement location="C:\\eclipse-helios\\plugins\\org.hamcrest.core_1.1.0.v20090501071000.jar" />-->
 		<pathelement location="test-bin" />
 		<path refid="classpath.base" />
 	</path>
-	<target name="test" depends="compile-test">
+	<target name="test" depends="pack,compile-test">
 		<mkdir dir="tests" />
 		<junit>
 			<classpath refid="classpath.test" />
+			<classpath>
+				<pathelement location="JLENetHistory.jar" />
+			</classpath>
 			<formatter type="xml" />
 			<test name="de.jlenet.desktop.history.TestStoreAndLoad" todir="tests" />
 		</junit>
 		<delete dir="testHistory" />
 	</target>
-	<target name="pack" depends="test">
-		<jar destfile="JLENetHistory.jar" basedir="bin"/>
+	<target name="test-debug" depends="pack-debug,compile-test">
+		<mkdir dir="debugTests" />
+		<junit>
+			<classpath refid="classpath.test" />
+			<classpath>
+				<pathelement location="JLENetHistory-debug.jar" />
+			</classpath>
+			<formatter type="xml" />
+			<test name="de.jlenet.desktop.history.TestStoreAndLoad" todir="debugTests" />
+		</junit>
+		<delete dir="testHistory" />
 	</target>
+	<target name="pack" depends="compile">
+		<jar destfile="JLENetHistory.jar" basedir="bin" />
+	</target>
+	<target name="pack-debug" depends="compile-debug">
+		<jar destfile="JLENetHistory-debug.jar">
+			<fileset dir="debug-bin" />
+			<fileset dir="src" />
+		</jar>
+	</target>
+
 
 </project>

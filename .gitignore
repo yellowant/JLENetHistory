@@ -1,5 +1,8 @@
 /bin
 /test-bin
+/debug-bin
 /testHistory
 /tests
+/debugTests
 /JLENetHistory.jar
+/JLENetHistory-debug.jar
