@@ -61,6 +61,7 @@
 			<formatter type="xml" />
 			<test name="de.jlenet.desktop.history.TestStoreAndLoad" todir="debugTests" />
 		</junit>
+		<replace dir="debugTests" token="de.jlenet.desktop.history" value="de.jlenet.desktop.history-debug"/>
 		<delete dir="testHistory" />
 	</target>
 	<target name="pack" depends="compile">
