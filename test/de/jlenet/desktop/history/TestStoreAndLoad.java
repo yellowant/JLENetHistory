@@ -15,6 +15,9 @@ import org.xml.sax.SAXException;
 
 import static org.junit.Assert.*;
 public class TestStoreAndLoad {
+	public static final long TEST_BASE = (1398959418266L / History.BASE)
+			* History.BASE;
+
 	File base = new File("testHistory");
 	@Before
 	public void clean() {
@@ -35,14 +38,14 @@ public class TestStoreAndLoad {
 	@Test
 	public void testStoreAndLoad() {
 		History h = new History(base);
-		h.addMessage(new HistoryMessage("<message>test</message>",
-				History.TEST_BASE, "romeo@montagues.lit", false));
+		h.addMessage(new HistoryMessage("<message>test</message>", TEST_BASE,
+				"romeo@montagues.lit", false));
 		h.store();
 		System.out.println("Editing");
 		for (int i = 0; i < 32; i++) {
 			h.addMessage(new HistoryMessage("<message>test</message>",
-					History.TEST_BASE + 60 * 60 * 1000 * i,
-					"romeo@montagues.lit", false));
+					TEST_BASE + 60 * 60 * 1000 * i, "romeo@montagues.lit",
+					false));
 		}
 		h.store();
 		h = new History(base);
@@ -53,7 +56,7 @@ public class TestStoreAndLoad {
 		History h = new History(base);
 		for (int i = 0; i < 512; i++) {
 			h.addMessage(new HistoryMessage("<message>test" + i + "</message>",
-					History.TEST_BASE + 60 * 60 * 1000L * i
+					TEST_BASE + 60 * 60 * 1000L * i
 							* History.CHILDREN_PER_LEVEL
 							* History.CHILDREN_PER_LEVEL + 10,
 					"romeo@montagues.lit", false));
@@ -86,7 +89,7 @@ public class TestStoreAndLoad {
 		History h = new History(base);
 		for (int i = 0; i < 2048; i++) {
 			h.addMessage(new HistoryMessage("<message>test" + i + "</message>",
-					History.TEST_BASE + 60 * 60 * 1000L * i + 10,
+					TEST_BASE + 60 * 60 * 1000L * i + 10,
 					"romeo@montagues.lit", true));
 			h.store();
 			assertEquals(base.listFiles().length, h.getRootBlock(5).filesCount);
@@ -94,17 +97,15 @@ public class TestStoreAndLoad {
 		for (int i = 0; i < 2048; i++) {
 			assertEquals(
 					i + 1,
-					h.getMessages("romeo@montagues.lit", History.TEST_BASE,
-							History.TEST_BASE + 60 * 60 * 1000L * i + 10)
-							.size());
+					h.getMessages("romeo@montagues.lit", TEST_BASE,
+							TEST_BASE + 60 * 60 * 1000L * i + 10).size());
 		}
 		History h2 = new History(base);
 		for (int i = 0; i < 2048; i++) {
 			assertEquals(
 					i + 1,
-					h.getMessages("romeo@montagues.lit", History.TEST_BASE,
-							History.TEST_BASE + 60 * 60 * 1000L * i + 10)
-							.size());
+					h.getMessages("romeo@montagues.lit", TEST_BASE,
+							TEST_BASE + 60 * 60 * 1000L * i + 10).size());
 		}
 
 		assertEquals(base.listFiles().length, h2.getRootBlock(5).filesCount);
@@ -125,9 +126,8 @@ public class TestStoreAndLoad {
 		for (int i = 0; i < 2048; i++) {
 			assertEquals(
 					i + 1,
-					h.getMessages("romeo@montagues.lit", History.TEST_BASE,
-							History.TEST_BASE + 60 * 60 * 1000L * i + 10)
-							.size());
+					h.getMessages("romeo@montagues.lit", TEST_BASE,
+							TEST_BASE + 60 * 60 * 1000L * i + 10).size());
 		}
 
 	}
@@ -155,7 +155,7 @@ public class TestStoreAndLoad {
 		assertEquals(
 				0,
 				new History(base).getMessages("romeo@montagues.lit", 0,
-						History.TEST_BASE + History.BASE * 1000L).size());
+						TEST_BASE + History.BASE * 1000L).size());
 		assertArrayEquals(new File[]{new File(base, "5_14_13_15_1.xml"),
 				new File(base, "5_14_13_15_3.xml")}, base.listFiles());
 	}
@@ -172,15 +172,15 @@ public class TestStoreAndLoad {
 		assertEquals(
 				1,
 				new History(base).getMessages("romeo@montagues.lit", 0,
-						History.TEST_BASE + History.BASE * 1000L).size());
+						TEST_BASE + History.BASE * 1000L).size());
 		assertEquals(
 				2,
 				new History(base).getMessages("juliet@capulets.lit", 0,
-						History.TEST_BASE + History.BASE * 1000L).size());
+						TEST_BASE + History.BASE * 1000L).size());
 		assertEquals(
 				0,
 				new History(base).getMessages("mercutio@montagues.lit", 0,
-						History.TEST_BASE + History.BASE * 1000L).size());
+						TEST_BASE + History.BASE * 1000L).size());
 	}
 
 	private void write(String string, File file) {

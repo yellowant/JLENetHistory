@@ -89,13 +89,6 @@ public class History {
 		}
 		return hb;
 	}
-	public static long recurseTime(long time) {
-		time = (time & ((1L << BITS_PER_LEVEL * LEVELS) - 1)) << BITS_PER_LEVEL;
-		return time;
-	}
-	public static int getMyCount(long time) {
-		return (int) (time >> (BITS_PER_LEVEL * LEVELS));
-	}
 	public void modified(long time) {
 		time /= BASE;
 		int count = getMyCount(time);
@@ -115,13 +108,56 @@ public class History {
 		return years.size();
 	}
 
+	public Set<HistoryMessage> getMessages(String bareJid, long from,
+			final long to) {
+		HistoryMessage dummyFrom = new HistoryMessage(from);
+		HistoryMessage dummyTo = new HistoryMessage(to + 1);
+
+		TreeSet<HistoryMessage> result = new TreeSet<HistoryMessage>();
+		int toHour = getMyCount(to / BASE);
+		int fromHour = getMyCount(from / BASE);
+		for (int i = fromHour; i <= toHour; i++) {
+			addMessages(bareJid, getRootBlock(i), i == fromHour
+					? recurseTime(from / BASE)
+					: 0, i == toHour ? recurseTime(to / BASE) : -1, result,
+					dummyFrom, dummyTo);
+		}
+		return result;
+
+	}
+	private void addMessages(String bareJid, HistoryBlock block, long from,
+			long to, Set<HistoryMessage> target, HistoryMessage dummyFrom,
+			HistoryMessage dummyTo) {
+		if (block instanceof HistoryLeafNode) {
+			for (HistoryMessage historyMessage : ((HistoryLeafNode) block)
+					.getMessages().subSet(dummyFrom, dummyTo)) {
+				if (historyMessage.getCorrespondent().equals(bareJid)) {
+					target.add(historyMessage);
+				}
+			}
+			return;
+		}
+		int myFrom = getMyCount(from);
+		long recurse = recurseTime(to);
+		if (to == -1) {
+			recurse = -1;
+		}
+		int myTo = to == -1L ? CHILDREN_PER_LEVEL - 1 : getMyCount(to);
+		HistoryTreeBlock htb = (HistoryTreeBlock) block;
+		for (int i = myFrom; i <= myTo; i++) {
+			addMessages(bareJid, htb.getBlock(i), i == myFrom
+					? recurseTime(from)
+					: 0, i == myTo ? recurse : -1, target, dummyFrom, dummyTo);
+
+		}
+
+	}
 	private void ensureSize(int count) {
 		years.ensureCapacity(count);
 		while (years.size() <= count) {
 			years.add(null);
 		}
 	}
-	public static final long TEST_BASE = (1398959418266L / BASE) * BASE;
 
 	public void store() {
 		for (int i = 0; i < years.size(); i++) {
@@ -366,48 +402,12 @@ public class History {
 
 		return 1 << (BITS_PER_LEVEL * (LEVELS - i));
 	}
-	public Set<HistoryMessage> getMessages(String bareJid, long from,
-			final long to) {
-		HistoryMessage dummyFrom = new HistoryMessage(from);
-		HistoryMessage dummyTo = new HistoryMessage(to + 1);
-
-		TreeSet<HistoryMessage> result = new TreeSet<HistoryMessage>();
-		int toHour = getMyCount(to / BASE);
-		int fromHour = getMyCount(from / BASE);
-		for (int i = fromHour; i <= toHour; i++) {
-			addMessages(bareJid, getRootBlock(i), i == fromHour
-					? recurseTime(from / BASE)
-					: 0, i == toHour ? recurseTime(to / BASE) : -1, result,
-					dummyFrom, dummyTo);
-		}
-		return result;
-
+	public static long recurseTime(long time) {
+		time = (time & ((1L << BITS_PER_LEVEL * LEVELS) - 1)) << BITS_PER_LEVEL;
+		return time;
 	}
-	private void addMessages(String bareJid, HistoryBlock block, long from,
-			long to, Set<HistoryMessage> target, HistoryMessage dummyFrom,
-			HistoryMessage dummyTo) {
-		if (block instanceof HistoryLeafNode) {
-			for (HistoryMessage historyMessage : ((HistoryLeafNode) block)
-					.getMessages().subSet(dummyFrom, dummyTo)) {
-				if (historyMessage.getCorrespondent().equals(bareJid)) {
-					target.add(historyMessage);
-				}
-			}
-			return;
-		}
-		int myFrom = getMyCount(from);
-		long recurse = recurseTime(to);
-		if (to == -1) {
-			recurse = -1;
-		}
-		int myTo = to == -1L ? CHILDREN_PER_LEVEL - 1 : getMyCount(to);
-		HistoryTreeBlock htb = (HistoryTreeBlock) block;
-		for (int i = myFrom; i <= myTo; i++) {
-			addMessages(bareJid, htb.getBlock(i), i == myFrom
-					? recurseTime(from)
-					: 0, i == myTo ? recurse : -1, target, dummyFrom, dummyTo);
-
-		}
-
+	public static int getMyCount(long time) {
+		return (int) (time >> (BITS_PER_LEVEL * LEVELS));
 	}
+
 }
