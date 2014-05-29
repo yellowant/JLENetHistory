@@ -48,6 +48,7 @@
 			</classpath>
 			<formatter type="xml" />
 			<test name="de.jlenet.desktop.history.TestStoreAndLoad" todir="tests" />
+			<test name="de.jlenet.desktop.history.TestUtils" todir="tests" />
 		</junit>
 		<delete dir="testHistory" />
 	</target>
@@ -60,6 +61,7 @@
 			</classpath>
 			<formatter type="xml" />
 			<test name="de.jlenet.desktop.history.TestStoreAndLoad" todir="debugTests" />
+			<test name="de.jlenet.desktop.history.TestUtils" todir="debugTests" />
 		</junit>
 		<replace dir="debugTests" token="de.jlenet.desktop.history" value="de.jlenet.desktop.history-debug"/>
 		<delete dir="testHistory" />
