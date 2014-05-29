@@ -35,25 +35,62 @@ import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 import org.xmlpull.v1.XmlPullParser;
 
+/**
+ * Implements the message History for a chat Client. It effectively stores
+ * {@link HistoryMessage}s in a set of Files.
+ * 
+ */
 public class History {
-	ArrayList<HistoryBlock> years = new ArrayList<HistoryBlock>();
-	File base;
+	private ArrayList<HistoryBlock> years = new ArrayList<HistoryBlock>();
+	private File base;
+
+	/**
+	 * Creates/loads a History.
+	 * 
+	 * @param file
+	 *            the file to {@link #store()} to. And to load from.
+	 */
 	public History(File file) {
 		base = file;
 		load();
 	}
+	/**
+	 * Adds a message to the History.
+	 * 
+	 * @param hm
+	 *            the Message to add. (Remember to {@link #store()} if you want
+	 *            the Message to be on the disk.
+	 */
 	public void addMessage(HistoryMessage hm) {
 		((HistoryLeafNode) getAnyBlock(hm.getTime(), LEVELS)).add(hm);
 		modified(hm.getTime());
 
 	}
+	/**
+	 * How many bits of the timestamp will be used per sync-level.
+	 */
 	public static final int BITS_PER_LEVEL = 4;
+	/**
+	 * How many sync levels there will be.
+	 */
 	public static final int LEVELS = 4;
+	/**
+	 * What is the smallest consistent block that will be synced (in millis).
+	 */
 	public static final int BASE = 1000 * 60 * 60;
+	/**
+	 * How many child blocks are in an intermediate History block.
+	 */
 	public static final int CHILDREN_PER_LEVEL = 1 << BITS_PER_LEVEL;
 
+	/**
+	 * How many files are tried to create on the disk as a maximum.
+	 */
 	public static final int MAX_FILES = 16;
 
+	/**
+	 * Array of checksums for empty blocks. (from root to leaf)
+	 */
 	public static final byte[][] DUMMY_CHECKSUMS;
 
 	public static final boolean DEBUG_STORE = false;
