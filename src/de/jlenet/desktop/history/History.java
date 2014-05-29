@@ -241,7 +241,10 @@ public class History {
 
 		hd.startDocument();
 		AttributesImpl atti = new AttributesImpl();
+		atti.addAttribute(null, null, "checksum", "CDATA",
+				beautifyChecksum(hb.getChecksum()));
 		hd.startElement("", "", "history", atti);
+		atti.clear();
 		hb.serialize(hd, atti);
 		hd.endElement("", "", "history");
 		hd.endDocument();
@@ -269,6 +272,14 @@ public class History {
 			sb.append(Integer.toHexString(data[i] & 0xF));
 		}
 		return sb.toString();
+	}
+	public static byte[] parseChecksum(String data) {
+		byte[] sb = new byte[data.length() / 2];
+		for (int i = 0; i < sb.length; i++) {
+			sb[i] = (byte) Integer.parseInt(data.substring(i * 2, i * 2 + 2),
+					16);
+		}
+		return sb;
 	}
 	public static IQ getResponse(Connection conn, IQ packet) {
 		PacketCollector collector = conn.createPacketCollector(new AndFilter(

@@ -34,7 +34,7 @@ public abstract class HistoryBlock {
 		if (xpp.getName().equals("msg")) {
 			return new HistoryLeafNode(xpp);
 		} else {
-			return new HistoryTreeBlock(i, xpp, start);
+			return new HistoryTreeBlock(i, xpp, start, chksum);
 		}
 	}
 

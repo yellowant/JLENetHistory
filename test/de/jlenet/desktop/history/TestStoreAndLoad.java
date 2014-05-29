@@ -69,6 +69,8 @@ public class TestStoreAndLoad {
 		File f = new File(base, "6.xml");
 		byte[] oldData = readFile(f);
 		h2.compact("6", (HistoryTreeBlock) h2.getRootBlock(6));
+		HistoryTreeBlock htb = (HistoryTreeBlock) h2.getRootBlock(7);
+		htb.getBlock(0).getChecksum();
 		byte[] newData = readFile(f);
 		assertArrayEquals(oldData, newData);
 	}

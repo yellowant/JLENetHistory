@@ -32,14 +32,21 @@ public class HistoryTreeBlock extends HistoryBlock {
 	 * @param xpp
 	 *            positioned on first element
 	 * @param start
+	 * @param chksum
 	 * @throws XmlPullParserException
 	 * @throws IOException
 	 */
-	public HistoryTreeBlock(int level, PositionAwareXMLPullParser xpp, int start)
-			throws XmlPullParserException, IOException {
+	public HistoryTreeBlock(int level, PositionAwareXMLPullParser xpp,
+			int start, String chksum) throws XmlPullParserException,
+			IOException {
 		offset = start;
 		myPosition = xpp.getFile();
 		this.level = level;
+		if (chksum != null) {
+			checksum = History.parseChecksum(chksum);
+		} else {
+			System.err.println("Warning: missing checksum");
+		}
 		if (level == 1) {
 			children = null;
 			while (xpp.getEventType() == XmlPullParser.START_TAG) {
