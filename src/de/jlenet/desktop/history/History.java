@@ -113,6 +113,16 @@ public class History {
 		DUMMY_CHECKSUMS = chks;
 	}
 
+	/**
+	 * Get the history block at the given location.
+	 * 
+	 * @param time
+	 *            the timestamp (millis) for the time where this block is
+	 *            located.
+	 * @param level
+	 *            the level where this block is located in the tree (0 is root)
+	 * @return the specified block
+	 */
 	public HistoryBlock getAnyBlock(long time, int level) {
 		time /= BASE;
 		int count = getMyCount(time);
@@ -124,12 +134,26 @@ public class History {
 		}
 		return hb;
 	}
+	/**
+	 * notify the tree of a Modification to be saved in subsequent
+	 * {@link #store()}-calls'
+	 * 
+	 * @param time
+	 *            the time at which the modification happened.
+	 */
 	public void modified(long time) {
 		time /= BASE;
 		int count = getMyCount(time);
 		HistoryBlock hb = getRootBlock(count);
 		hb.modified(recurseTime(time));
 	}
+	/**
+	 * Get the root block with the given index.
+	 * 
+	 * @param count
+	 *            the index of the root block to retrive
+	 * @return the indexed root block
+	 */
 	public HistoryBlock getRootBlock(int count) {
 		ensureSize(count);
 		HistoryBlock hb = years.get(count);
@@ -139,10 +163,26 @@ public class History {
 		}
 		return hb;
 	}
+	/**
+	 * get the number of root blocks
+	 * 
+	 * @return the number of root blocks.
+	 */
 	public int getLastCount() {
 		return years.size();
 	}
 
+	/**
+	 * Get all specified Messages.
+	 * 
+	 * @param bareJid
+	 *            the bare JID of the user to retrive messages from
+	 * @param from
+	 *            the first millisecond from which messages will be retrived
+	 * @param to
+	 *            the last millisecond to which messages will be retrived
+	 * @return the messages
+	 */
 	public Set<HistoryMessage> getMessages(String bareJid, long from,
 			final long to) {
 		HistoryMessage dummyFrom = new HistoryMessage(from);
@@ -152,7 +192,7 @@ public class History {
 		int toHour = getMyCount(to / BASE);
 		int fromHour = getMyCount(from / BASE);
 		for (int i = fromHour; i <= toHour; i++) {
-			addMessages(bareJid, getRootBlock(i), i == fromHour
+			addMessagesToSet(bareJid, getRootBlock(i), i == fromHour
 					? recurseTime(from / BASE)
 					: 0, i == toHour ? recurseTime(to / BASE) : -1, result,
 					dummyFrom, dummyTo);
@@ -160,9 +200,30 @@ public class History {
 		return result;
 
 	}
-	private void addMessages(String bareJid, HistoryBlock block, long from,
-			long to, Set<HistoryMessage> target, HistoryMessage dummyFrom,
-			HistoryMessage dummyTo) {
+
+	/**
+	 * Adds all specified messages to the given set.
+	 * 
+	 * @param bareJid
+	 *            the jid to search for
+	 * @param block
+	 *            the block to search in
+	 * @param from
+	 *            the first millisecond
+	 * @param to
+	 *            the last millisecond
+	 * @param target
+	 *            the set to add it to
+	 * @param dummyFrom
+	 *            a lower dummy message that will be used for
+	 *            {@link Comparable#compareTo(Object)}
+	 * @param dummyTo
+	 *            a upper dummy message that will be used for
+	 *            {@link Comparable#compareTo(Object)}
+	 */
+	private void addMessagesToSet(String bareJid, HistoryBlock block,
+			long from, long to, Set<HistoryMessage> target,
+			HistoryMessage dummyFrom, HistoryMessage dummyTo) {
 		if (block instanceof HistoryLeafNode) {
 			for (HistoryMessage historyMessage : ((HistoryLeafNode) block)
 					.getMessages().subSet(dummyFrom, dummyTo)) {
@@ -180,13 +241,20 @@ public class History {
 		int myTo = to == -1L ? CHILDREN_PER_LEVEL - 1 : getMyCount(to);
 		HistoryTreeBlock htb = (HistoryTreeBlock) block;
 		for (int i = myFrom; i <= myTo; i++) {
-			addMessages(bareJid, htb.getBlock(i), i == myFrom
+			addMessagesToSet(bareJid, htb.getBlock(i), i == myFrom
 					? recurseTime(from)
 					: 0, i == myTo ? recurse : -1, target, dummyFrom, dummyTo);
 
 		}
 
 	}
+	/**
+	 * Increases the size of this history so that {@link #years} will be of at
+	 * least <code>count</code> size
+	 * 
+	 * @param count
+	 *            the minimal size
+	 */
 	private void ensureSize(int count) {
 		years.ensureCapacity(count);
 		while (years.size() <= count) {
@@ -194,6 +262,9 @@ public class History {
 		}
 	}
 
+	/**
+	 * Stores all changes in this history to the underlying file.
+	 */
 	public void store() {
 		for (int i = 0; i < years.size(); i++) {
 			if (years.get(i) != null) {
@@ -205,6 +276,17 @@ public class History {
 			}
 		}
 	}
+	/**
+	 * Updates all necessary files for the given block.
+	 * 
+	 * @param historyBlock
+	 *            the block to store
+	 * @param prefix
+	 *            the filename prefix
+	 * @param maxfiles
+	 *            the maximum number of files allowed for this block
+	 * @return the number of files used by this block now.
+	 */
 	private int reconcile(HistoryBlock historyBlock, String prefix, int maxfiles) {
 		if (!historyBlock.modified) {
 			return historyBlock.filesCount;
@@ -242,6 +324,22 @@ public class History {
 			throw new Error(e);
 		}
 	}
+	/**
+	 * Compacts the given block to exactly one file (with the given prefix)
+	 * 
+	 * @param prefix
+	 *            the prefix of the file.
+	 * @param hb
+	 *            the block to store
+	 * @throws TransformerFactoryConfigurationError
+	 *             if XML is spooky
+	 * @throws TransformerConfigurationException
+	 *             if XML is spooky
+	 * @throws SAXException
+	 *             if XML is spooky
+	 * @throws IOException
+	 *             if harddrive is nervous
+	 */
 	public void compact(String prefix, HistoryTreeBlock hb)
 			throws TransformerFactoryConfigurationError,
 			TransformerConfigurationException, SAXException, IOException {
@@ -259,6 +357,15 @@ public class History {
 		file.renameTo(new File(base, prefix + ".xml"));
 		hb.filesCount = 1;
 	}
+
+	/**
+	 * Deletes all files of this block.
+	 * 
+	 * @param historyBlock
+	 *            the block to delete files for
+	 * @param prefix
+	 *            the filename prefix to delete the files
+	 */
 	private void clean(HistoryBlock historyBlock, String prefix) {
 		if (historyBlock.filesCount == 0) {
 			return;
@@ -281,6 +388,18 @@ public class History {
 		historyBlock.ownFile = false;
 
 	}
+
+	/**
+	 * Loads a given file.
+	 * 
+	 * @param f
+	 *            the file to load
+	 * @param level
+	 *            the level of which this block is.
+	 * @return the loaded block
+	 * @throws IOException
+	 *             if the file doesnt want to be read.
+	 */
 	private static HistoryBlock loadBlock(File f, int level) throws IOException {
 
 		try {
@@ -304,6 +423,14 @@ public class History {
 			throw new IOException(e);
 		}
 	}
+	/**
+	 * Export the given block to a output stream.
+	 * 
+	 * @param hb
+	 *            the block to write out.
+	 * @param os
+	 *            the stream to write to.
+	 */
 	public static void export(HistoryBlock hb, OutputStream os)
 			throws TransformerFactoryConfigurationError,
 			TransformerConfigurationException, SAXException, IOException {
@@ -322,6 +449,13 @@ public class History {
 		wr.flush();
 		wr.close();
 	}
+	/**
+	 * Creates a default-configured SAX writer. (to this stream)
+	 * 
+	 * @param wr
+	 *            the Writer to which this SAX-transformer will write to
+	 * @return the created transformer.
+	 */
 	public static TransformerHandler createSax(Writer wr)
 			throws TransformerFactoryConfigurationError,
 			TransformerConfigurationException {
@@ -336,6 +470,13 @@ public class History {
 		hd.setResult(streamResult);
 		return hd;
 	}
+	/**
+	 * Creates a canonical representation for this checksum.
+	 * 
+	 * @param data
+	 *            bytes of data
+	 * @return string containing 2 chars per byte
+	 */
 	public static String beautifyChecksum(byte[] data) {
 		StringBuffer sb = new StringBuffer(data.length * 2);
 		for (int i = 0; i < data.length; i++) {
@@ -344,6 +485,13 @@ public class History {
 		}
 		return sb.toString();
 	}
+	/**
+	 * Parses a canonical checksum representation back to a byte array
+	 * 
+	 * @param data
+	 *            the checksum
+	 * @return bytes containing one byte per 2 hex-chars
+	 */
 	public static byte[] parseChecksum(String data) {
 		byte[] sb = new byte[data.length() / 2];
 		for (int i = 0; i < sb.length; i++) {
@@ -352,6 +500,16 @@ public class History {
 		}
 		return sb;
 	}
+
+	/**
+	 * Sends out an IQ package and waits for a response
+	 * 
+	 * @param conn
+	 *            the connection to send the package
+	 * @param packet
+	 *            the packet to send
+	 * @return the response (in default response time (def. 5sec)).
+	 */
 	public static IQ getResponse(Connection conn, IQ packet) {
 		PacketCollector collector = conn.createPacketCollector(new AndFilter(
 				new PacketIDFilter(packet.getPacketID()), new IQTypeFilter(
@@ -366,6 +524,10 @@ public class History {
 		collector.cancel();
 		return result;
 	}
+
+	/**
+	 * Loads all files from the storage location.
+	 */
 	private void load() {
 		for (File f : base.listFiles()) {
 			if (f.getName().endsWith(".xml.new")) {
@@ -430,6 +592,13 @@ public class History {
 			}
 		}
 	}
+	/**
+	 * returns the number of Atomic blocks in the given level block.
+	 * 
+	 * @param i
+	 *            the level.
+	 * @return the number of atomic blocks
+	 */
 	public static int getHoursPerBlock(int i) {
 		if (i > LEVELS || i < 0) {
 			return 0;
@@ -437,10 +606,37 @@ public class History {
 
 		return 1 << (BITS_PER_LEVEL * (LEVELS - i));
 	}
+	/**
+	 * returns the time that needs to be given to {@link #recurseTime(long)} and
+	 * to {@link #getMyCount(long)} for the underlying level.
+	 * 
+	 * @param time
+	 *            the time to adjust
+	 * @return the new time
+	 * @see #getMyCount(long)
+	 */
 	public static long recurseTime(long time) {
 		time = (time & ((1L << BITS_PER_LEVEL * LEVELS) - 1)) << BITS_PER_LEVEL;
 		return time;
 	}
+
+	/**
+	 * Returns the index for the given block.
+	 * 
+	 * Iterating over all block is done the following way:<br>
+	 * <code><pre>
+	 * long millis = ...;
+	 * for(int level = 0; level <= LEVELS; level++){
+	 * 	int myIndex = getMyCount(millis);
+	 *  // In level "level" take block index "myIndex"
+	 * 	millis = recurseTime(millis);
+	 * }</pre>
+	 * </code>
+	 * 
+	 * @param time
+	 *            the time (see {@link #recurseTime(long)} and {@link #BASE})
+	 * @return the index
+	 */
 	public static int getMyCount(long time) {
 		return (int) (time >> (BITS_PER_LEVEL * LEVELS));
 	}
