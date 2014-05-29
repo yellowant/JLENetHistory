@@ -74,4 +74,9 @@ public class HistoryLeafNode extends HistoryBlock {
 		// is always loaded
 	}
 
+	@Override
+	public boolean isEmpty() {
+		return hmsg.isEmpty();
+	}
+
 }

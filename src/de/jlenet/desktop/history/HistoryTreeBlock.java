@@ -109,7 +109,7 @@ public class HistoryTreeBlock extends HistoryBlock {
 	public void serialize(TransformerHandler hd, AttributesImpl atti)
 			throws SAXException {
 		for (int i = 0; i < children.length; i++) {
-			if (children[i] != null) {
+			if (children[i] != null && !children[i].isEmpty()) {
 				atti.addAttribute("", "", "id", "CDATA", Integer.toString(i));
 				children[i].ensureLoaded();
 				atti.addAttribute("", "", "checksum", "CDATA",
@@ -155,5 +155,17 @@ public class HistoryTreeBlock extends HistoryBlock {
 				e.printStackTrace();
 			}
 		}
+	}
+	@Override
+	public boolean isEmpty() {
+		if (children == null) {
+			return false;
+		}
+		for (int i = 0; i < children.length; i++) {
+			if (children[i] != null && !children[i].isEmpty()) {
+				return false;
+			}
+		}
+		return true;
 	}
 }

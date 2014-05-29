@@ -39,4 +39,6 @@ public abstract class HistoryBlock {
 	}
 
 	public abstract void ensureLoaded();
+
+	public abstract boolean isEmpty();
 }
