@@ -93,8 +93,6 @@ public class History {
 	 */
 	public static final byte[][] DUMMY_CHECKSUMS;
 
-	public static final boolean DEBUG_STORE = false;
-
 	static {
 		byte[][] chks = new byte[LEVELS][];
 		MessageDigest md;
@@ -201,7 +199,7 @@ public class History {
 			if (years.get(i) != null) {
 				int files = reconcile(years.get(i), Integer.toString(i),
 						MAX_FILES);
-				if (DEBUG_STORE) {
+				if (Debug.ENABLED) {
 					System.out.println("In " + files + " files");
 				}
 			}
@@ -230,7 +228,7 @@ public class History {
 				hb.modified = false;
 				return hb.filesCount = count;
 			}
-			if (DEBUG_STORE) {
+			if (Debug.ENABLED) {
 				System.out.println("storing: " + prefix + ";" + base);
 			}
 			historyBlock.modified = false;
@@ -252,7 +250,7 @@ public class History {
 		File ready = new File(prefix + ".xml.ready");
 		file.renameTo(ready);
 		file = ready;
-		if (DEBUG_STORE) {
+		if (Debug.ENABLED) {
 			System.out.println("compressing: " + prefix + ";" + base);
 		}
 		hb.filesCount = 1;
@@ -265,7 +263,7 @@ public class History {
 		if (historyBlock.filesCount == 0) {
 			return;
 		}
-		if (DEBUG_STORE) {
+		if (Debug.ENABLED) {
 			System.out.println("cleaning: " + prefix);
 		}
 		if (historyBlock instanceof HistoryTreeBlock) {
