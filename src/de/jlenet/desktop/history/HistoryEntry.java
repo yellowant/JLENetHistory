@@ -8,7 +8,6 @@ import java.security.NoSuchAlgorithmException;
 import javax.xml.transform.sax.TransformerHandler;
 
 import org.jivesoftware.smack.packet.Message;
-import org.jivesoftware.smack.util.PacketParserUtils;
 import org.jivesoftware.smack.util.StringUtils;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
@@ -16,48 +15,52 @@ import org.xmlpull.mxp1.MXParser;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
-public class HistoryMessage implements Comparable<HistoryMessage> {
+import de.jlenet.desktop.history.payloads.CompletedFileTransfer;
+import de.jlenet.desktop.history.payloads.HistoryMessage;
+import de.jlenet.desktop.history.payloads.HistoryPayload;
+
+public class HistoryEntry implements Comparable<HistoryEntry> {
 	long time;
 	byte[] checksum;
 
-	String contents;
 	String correspondent;
 	boolean isOutgoing;
-	Message parsed = null;
+	String contents;
 
-	public HistoryMessage(Message mes, long time, boolean isOutgoing) {
+	HistoryPayload parsed;
+
+	public HistoryEntry(Message mes, long time, boolean isOutgoing) {
 		this.time = time;
-		parsed = mes;
+		parsed = new HistoryMessage(mes);
 		contents = mes.toXML();
 		correspondent = StringUtils.parseBareAddress(isOutgoing
 				? mes.getTo()
 				: mes.getFrom());
 		this.isOutgoing = isOutgoing;
 	}
-	public HistoryMessage(String contents, long time, String correspondent,
+	public HistoryEntry(HistoryPayload contents, long time,
+			String correspondent, boolean isOutgoing) {
+		this(contents.toXML(), time, correspondent, isOutgoing);
+		parsed = contents;
+	}
+	public HistoryEntry(String contents, long time, String correspondent,
 			boolean isOutgoing) {
 		this.time = time;
 		this.contents = contents;
 		this.correspondent = StringUtils.parseBareAddress(correspondent);
 		this.isOutgoing = isOutgoing;
 	}
-	public HistoryMessage(XmlPullParser xpp) throws XmlPullParserException,
+	public HistoryEntry(XmlPullParser xpp) throws XmlPullParserException,
 			IOException {
 		time = Long.parseLong(xpp.getAttributeValue("", "time"));
 		correspondent = xpp.getAttributeValue(null, "jid");
 		isOutgoing = xpp.getAttributeValue(null, "outgoing").equals("y");
 		contents = xpp.nextText();
 	}
-	public HistoryMessage(long time) {
+	public HistoryEntry(long time) {
 		this.time = time;
 	}
-	public static void main(String[] args) {
-		HistoryMessage hm = new HistoryMessage(
-				"<message id=\"cy340-160\" to=\"juliet@capulets.lit/JLENetDesktop\" from=\"romeo@montegues.lit/Spark 2.6.3\" type=\"chat\"><body>ja, mir gehts gut</body><thread>cCYqy8</thread><x xmlns=\"jabber:x:event\"><offline/><composing/></x></message>",
-				System.currentTimeMillis(), "romeo@montegues.lit", false);
-		System.out.println(hm.getMessage().getBody());
-	}
-	public Message getMessage() {
+	public HistoryPayload getPayload() {
 		if (parsed != null) {
 			return parsed;
 		}
@@ -73,7 +76,13 @@ public class HistoryMessage implements Comparable<HistoryMessage> {
 		}
 
 		try {
-			parsed = (Message) PacketParserUtils.parseMessage(xpp);
+			if (xpp.getName().equals("msg")) {
+				parsed = new HistoryMessage(xpp);
+			} else if (xpp.getName().equals("file")) {
+				parsed = new CompletedFileTransfer(xpp);
+			} else {
+				System.err.println("warning, accessing unknown history entry");
+			}
 			if (xpp.getDepth() != 1) {
 				System.err.println("Warning: unclean pull parser");
 			}
@@ -103,7 +112,7 @@ public class HistoryMessage implements Comparable<HistoryMessage> {
 		return time;
 	}
 	@Override
-	public int compareTo(HistoryMessage o) {
+	public int compareTo(HistoryEntry o) {
 		if (this == o) {
 			return 0;
 		}
@@ -129,6 +138,13 @@ public class HistoryMessage implements Comparable<HistoryMessage> {
 			return 1;
 		}
 		return contents.compareTo(o.contents);
+	}
+	@Override
+	public boolean equals(Object obj) {
+		if (!(obj instanceof HistoryEntry)) {
+			return false;
+		}
+		return compareTo((HistoryEntry) obj) == 0;
 	}
 	public void serialize(TransformerHandler hd, AttributesImpl atti)
 			throws SAXException {

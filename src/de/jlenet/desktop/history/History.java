@@ -37,7 +37,7 @@ import org.xmlpull.v1.XmlPullParser;
 
 /**
  * Implements the message History for a chat Client. It effectively stores
- * {@link HistoryMessage}s in a set of Files.
+ * {@link HistoryEntry}s in a set of Files.
  * 
  */
 public class History {
@@ -61,7 +61,7 @@ public class History {
 	 *            the Message to add. (Remember to {@link #store()} if you want
 	 *            the Message to be on the disk.
 	 */
-	public void addMessage(HistoryMessage hm) {
+	public void addMessage(HistoryEntry hm) {
 		((HistoryLeafNode) getAnyBlock(hm.getTime(), LEVELS)).add(hm);
 		modified(hm.getTime());
 
@@ -183,12 +183,12 @@ public class History {
 	 *            the last millisecond to which messages will be retrived
 	 * @return the messages
 	 */
-	public Set<HistoryMessage> getMessages(String bareJid, long from,
+	public Set<HistoryEntry> getMessages(String bareJid, long from,
 			final long to) {
-		HistoryMessage dummyFrom = new HistoryMessage(from);
-		HistoryMessage dummyTo = new HistoryMessage(to + 1);
+		HistoryEntry dummyFrom = new HistoryEntry(from);
+		HistoryEntry dummyTo = new HistoryEntry(to + 1);
 
-		TreeSet<HistoryMessage> result = new TreeSet<HistoryMessage>();
+		TreeSet<HistoryEntry> result = new TreeSet<HistoryEntry>();
 		int toHour = getMyCount(to / BASE);
 		int fromHour = getMyCount(from / BASE);
 		for (int i = fromHour; i <= toHour; i++) {
@@ -222,10 +222,10 @@ public class History {
 	 *            {@link Comparable#compareTo(Object)}
 	 */
 	private void addMessagesToSet(String bareJid, HistoryBlock block,
-			long from, long to, Set<HistoryMessage> target,
-			HistoryMessage dummyFrom, HistoryMessage dummyTo) {
+			long from, long to, Set<HistoryEntry> target,
+			HistoryEntry dummyFrom, HistoryEntry dummyTo) {
 		if (block instanceof HistoryLeafNode) {
-			for (HistoryMessage historyMessage : ((HistoryLeafNode) block)
+			for (HistoryEntry historyMessage : ((HistoryLeafNode) block)
 					.getMessages().subSet(dummyFrom, dummyTo)) {
 				if (historyMessage.getCorrespondent().equals(bareJid)) {
 					target.add(historyMessage);

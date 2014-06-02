@@ -14,12 +14,12 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
 public class HistoryLeafNode extends HistoryBlock {
-	TreeSet<HistoryMessage> hmsg = new TreeSet<HistoryMessage>();
+	TreeSet<HistoryEntry> hmsg = new TreeSet<HistoryEntry>();
 	byte[] checksum;
 	public HistoryLeafNode(XmlPullParser xpp) throws XmlPullParserException,
 			IOException {
 		while (xpp.getEventType() == XmlPullParser.START_TAG) {
-			hmsg.add(new HistoryMessage(xpp));
+			hmsg.add(new HistoryEntry(xpp));
 			xpp.nextTag();
 		}
 	}
@@ -34,7 +34,7 @@ public class HistoryLeafNode extends HistoryBlock {
 		}
 		try {
 			MessageDigest md = MessageDigest.getInstance("SHA1");
-			for (HistoryMessage hb : hmsg) {
+			for (HistoryEntry hb : hmsg) {
 				md.update(hb.getChecksum());
 			}
 			return checksum = md.digest();
@@ -43,14 +43,14 @@ public class HistoryLeafNode extends HistoryBlock {
 		}
 	}
 
-	public void add(HistoryMessage hm) {
+	public void add(HistoryEntry hm) {
 		hmsg.add(hm);
 	}
 
 	@Override
 	public void serialize(TransformerHandler hd, AttributesImpl atti)
 			throws SAXException {
-		for (HistoryMessage message : hmsg) {
+		for (HistoryEntry message : hmsg) {
 			message.serialize(hd, atti);
 		}
 	}
@@ -61,11 +61,11 @@ public class HistoryLeafNode extends HistoryBlock {
 		checksum = null;
 	}
 
-	public SortedSet<HistoryMessage> getMessages() {
+	public SortedSet<HistoryEntry> getMessages() {
 		return hmsg;
 	}
 
-	public void setMessages(TreeSet<HistoryMessage> ts) {
+	public void setMessages(TreeSet<HistoryEntry> ts) {
 		hmsg = ts;
 	}
 

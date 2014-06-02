@@ -5,6 +5,8 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.Arrays;
+import java.util.Set;
 
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerFactoryConfigurationError;
@@ -13,6 +15,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.xml.sax.SAXException;
 
+import de.jlenet.desktop.history.payloads.CompletedFileTransfer;
 import static org.junit.Assert.*;
 public class TestStoreAndLoad {
 	public static final long TEST_BASE = (1398959418266L / History.BASE)
@@ -38,14 +41,13 @@ public class TestStoreAndLoad {
 	@Test
 	public void testStoreAndLoad() {
 		History h = new History(base);
-		h.addMessage(new HistoryMessage("<message>test</message>", TEST_BASE,
+		h.addMessage(new HistoryEntry("<message>test</message>", TEST_BASE,
 				"romeo@montagues.lit", false));
 		h.store();
 		System.out.println("Editing");
 		for (int i = 0; i < 32; i++) {
-			h.addMessage(new HistoryMessage("<message>test</message>",
-					TEST_BASE + 60 * 60 * 1000 * i, "romeo@montagues.lit",
-					false));
+			h.addMessage(new HistoryEntry("<message>test</message>", TEST_BASE
+					+ 60 * 60 * 1000 * i, "romeo@montagues.lit", false));
 		}
 		h.store();
 		h = new History(base);
@@ -55,7 +57,7 @@ public class TestStoreAndLoad {
 			TransformerFactoryConfigurationError, SAXException, IOException {
 		History h = new History(base);
 		for (int i = 0; i < 512; i++) {
-			h.addMessage(new HistoryMessage("<message>test" + i + "</message>",
+			h.addMessage(new HistoryEntry("<message>test" + i + "</message>",
 					TEST_BASE + 60 * 60 * 1000L * i
 							* History.CHILDREN_PER_LEVEL
 							* History.CHILDREN_PER_LEVEL + 10,
@@ -88,7 +90,7 @@ public class TestStoreAndLoad {
 	public void testStoreAndLoad2() {
 		History h = new History(base);
 		for (int i = 0; i < 2048; i++) {
-			h.addMessage(new HistoryMessage("<message>test" + i + "</message>",
+			h.addMessage(new HistoryEntry("<message>test" + i + "</message>",
 					TEST_BASE + 60 * 60 * 1000L * i + 10,
 					"romeo@montagues.lit", true));
 			h.store();
@@ -162,11 +164,11 @@ public class TestStoreAndLoad {
 	@Test
 	public void testJidGet() {
 		History h = new History(base);
-		h.addMessage(new HistoryMessage("romeoMSG", History.BASE,
+		h.addMessage(new HistoryEntry("romeoMSG", History.BASE,
 				"romeo@montagues.lit", false));
-		h.addMessage(new HistoryMessage("julietMSG", History.BASE,
+		h.addMessage(new HistoryEntry("julietMSG", History.BASE,
 				"juliet@capulets.lit", true));
-		h.addMessage(new HistoryMessage("julietMSG1", History.BASE,
+		h.addMessage(new HistoryEntry("julietMSG1", History.BASE,
 				"juliet@capulets.lit", true));
 		h.store();
 		assertEquals(
@@ -183,6 +185,30 @@ public class TestStoreAndLoad {
 						TEST_BASE + History.BASE * 1000L).size());
 	}
 
+	@Test
+	public void testMixedType() {
+		History h = new History(base);
+		HistoryEntry ft = new HistoryEntry(new CompletedFileTransfer(
+				"test.xml", true, 1024 * 16, "C:\\test.xml", "JLENet",
+				new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+						0, 0, 0, 0}), TEST_BASE, "romeo@montagues.lit", true);
+		h.addMessage(ft);
+		HistoryEntry msg = new HistoryEntry("romeoMSG", TEST_BASE + 1,
+				"romeo@montagues.lit", false);
+		h.addMessage(msg);
+		h.store();
+		History h2 = new History(base);
+		Set<HistoryEntry> msgs = h2.getMessages("romeo@montagues.lit",
+				TEST_BASE - 10, TEST_BASE + 10);
+		HistoryEntry[] he = msgs.toArray(new HistoryEntry[2]);
+		assertEquals(2, he.length);
+		Arrays.sort(he);
+		assertEquals(ft, he[0]);
+		assertEquals(msg, he[1]);
+		assertEquals(1024 * 16,
+				((CompletedFileTransfer) he[0].getPayload()).getFilesize());
+
+	}
 	private void write(String string, File file) {
 		FileWriter fw;
 		try {

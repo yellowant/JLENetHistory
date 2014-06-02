@@ -4,7 +4,7 @@ import org.jivesoftware.smack.packet.IQ;
 import org.jivesoftware.smack.provider.IQProvider;
 import org.xmlpull.v1.XmlPullParser;
 
-import de.jlenet.desktop.history.HistoryMessage;
+import de.jlenet.desktop.history.HistoryEntry;
 
 public class HistorySyncSetProvider implements IQProvider {
 
@@ -14,7 +14,7 @@ public class HistorySyncSetProvider implements IQProvider {
 				.getAttributeValue(null, "hour")), parser.getAttributeValue(
 				null, "checksum"));
 		while (parser.nextTag() == XmlPullParser.START_TAG) {
-			hsh.addMessage(new HistoryMessage(parser));
+			hsh.addMessage(new HistoryEntry(parser));
 		}
 		return hsh;
 	}

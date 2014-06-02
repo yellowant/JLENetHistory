@@ -17,7 +17,7 @@ import org.jivesoftware.smackx.ServiceDiscoveryManager;
 import de.jlenet.desktop.history.Debug;
 import de.jlenet.desktop.history.History;
 import de.jlenet.desktop.history.HistoryLeafNode;
-import de.jlenet.desktop.history.HistoryMessage;
+import de.jlenet.desktop.history.HistoryEntry;
 
 public class HistorySyncService {
 
@@ -72,12 +72,12 @@ public class HistorySyncService {
 					System.out.println("Have: " + hln.getMessages().size());
 					System.out.println("Got: " + sync.getMessages().size());
 				}
-				TreeSet<HistoryMessage> forMe = new TreeSet<HistoryMessage>();
-				TreeSet<HistoryMessage> forOther = new TreeSet<HistoryMessage>();
-				Iterator<HistoryMessage> have = hln.getMessages().iterator();
-				Iterator<HistoryMessage> got = sync.getMessages().iterator();
-				HistoryMessage currentGot = null;
-				HistoryMessage currentHave = null;
+				TreeSet<HistoryEntry> forMe = new TreeSet<HistoryEntry>();
+				TreeSet<HistoryEntry> forOther = new TreeSet<HistoryEntry>();
+				Iterator<HistoryEntry> have = hln.getMessages().iterator();
+				Iterator<HistoryEntry> got = sync.getMessages().iterator();
+				HistoryEntry currentGot = null;
+				HistoryEntry currentHave = null;
 				while (have.hasNext() || got.hasNext() || currentHave != null
 						|| currentGot != null) {
 					if (currentGot == null && got.hasNext()) {

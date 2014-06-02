@@ -6,20 +6,20 @@ import java.util.TreeSet;
 
 import org.jivesoftware.smack.packet.IQ;
 
-import de.jlenet.desktop.history.HistoryMessage;
+import de.jlenet.desktop.history.HistoryEntry;
 
 public class HistorySyncSet extends IQ {
-	SortedSet<HistoryMessage> messages = new TreeSet<HistoryMessage>();
+	SortedSet<HistoryEntry> messages = new TreeSet<HistoryEntry>();
 	long hour;
 	String checksum;
 	public HistorySyncSet(long hour, String checksum) {
 		this.hour = hour;
 		this.checksum = checksum;
 	}
-	public void addMessage(HistoryMessage message) {
+	public void addMessage(HistoryEntry message) {
 		messages.add(message);
 	}
-	public SortedSet<HistoryMessage> getMessages() {
+	public SortedSet<HistoryEntry> getMessages() {
 		return messages;
 	}
 	@Override
@@ -34,7 +34,7 @@ public class HistorySyncSet extends IQ {
 			sw.write("\"");
 		}
 		sw.write(">");
-		for (HistoryMessage hm : messages) {
+		for (HistoryEntry hm : messages) {
 			sw.append(hm.toXML());
 		}
 		sw.write("</syncSet>");
@@ -43,7 +43,7 @@ public class HistorySyncSet extends IQ {
 	public long getHour() {
 		return hour;
 	}
-	public void setMessages(SortedSet<HistoryMessage> forOther) {
+	public void setMessages(SortedSet<HistoryEntry> forOther) {
 		messages = forOther;
 	}
 	public String getChecksum() {
