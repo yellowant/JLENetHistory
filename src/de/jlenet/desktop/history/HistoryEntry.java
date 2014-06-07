@@ -76,12 +76,13 @@ public class HistoryEntry implements Comparable<HistoryEntry> {
 		}
 
 		try {
-			if (xpp.getName().equals("msg")) {
+			if (xpp.getName().equals("message")) {
 				parsed = new HistoryMessage(xpp);
 			} else if (xpp.getName().equals("file")) {
 				parsed = new CompletedFileTransfer(xpp);
 			} else {
-				System.err.println("warning, accessing unknown history entry");
+				System.err.println("warning, accessing unknown history entry: "
+						+ xpp.getName());
 			}
 			if (xpp.getDepth() != 1) {
 				System.err.println("Warning: unclean pull parser");
