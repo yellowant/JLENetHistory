@@ -28,6 +28,7 @@ public class Dump {
 			} else {
 				System.out.println("Unknown content.");
 			}
+			System.out.println("---");
 		}
 
 	}
