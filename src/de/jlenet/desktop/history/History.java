@@ -227,7 +227,8 @@ public class History {
 		if (block instanceof HistoryLeafNode) {
 			for (HistoryEntry historyMessage : ((HistoryLeafNode) block)
 					.getMessages().subSet(dummyFrom, dummyTo)) {
-				if (historyMessage.getCorrespondent().equals(bareJid)) {
+				if (bareJid == null
+						|| historyMessage.getCorrespondent().equals(bareJid)) {
 					target.add(historyMessage);
 				}
 			}
