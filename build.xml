@@ -1,6 +1,6 @@
 <!DOCTYPE project>
 <project name="JLETests" default="pack" basedir=".">
-	<property name="JUNIT" value="/home/jle/binaries/junit" />
+	<property name="JUNIT" value="/usr/share/java" />
 	<property name="SMACK" value="/home/jle/binaries" />
 
 	<target name="compile-test" depends="compile">
@@ -31,8 +31,8 @@
 		<pathelement location="${SMACK}/smackx.jar" />
 	</path>
 	<path id="classpath.test">
-		<pathelement location="${JUNIT}/junit.jar" />
-		<pathelement location="${JUNIT}/org.hamcrest.core_1.1.0.v20090501071000.jar" />
+		<pathelement location="${JUNIT}/junit4.jar" />
+		<pathelement location="${JUNIT}/hamcrest-all.jar" />
 
 		<!--<pathelement location="C:\\eclipse-helios\\plugins\\org.junit_4.8.1.v4_8_1_v20100427-1100\\junit.jar" />
 		<pathelement location="C:\\eclipse-helios\\plugins\\org.hamcrest.core_1.1.0.v20090501071000.jar" />-->
