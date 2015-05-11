@@ -512,18 +512,25 @@ public class History {
 	 * @return the response (in default response time (def. 5sec)).
 	 */
 	public static IQ getResponse(Connection conn, IQ packet) {
-		PacketCollector collector = conn.createPacketCollector(new AndFilter(
-				new PacketIDFilter(packet.getPacketID()), new IQTypeFilter(
-						IQ.Type.RESULT)));
+		for (int ctr = 0; ctr < 10; ctr++) {
 
-		conn.sendPacket(packet);
+			PacketCollector collector = conn
+					.createPacketCollector(new AndFilter(new PacketIDFilter(
+							packet.getPacketID()), new IQTypeFilter(
+							IQ.Type.RESULT)));
 
-		// Wait up to 5 seconds for a result.
-		IQ result = (IQ) collector.nextResult(SmackConfiguration
-				.getPacketReplyTimeout());
-		// Stop queuing results
-		collector.cancel();
-		return result;
+			conn.sendPacket(packet);
+
+			// Wait up to 5 seconds for a result.
+			IQ result = (IQ) collector.nextResult(SmackConfiguration
+					.getPacketReplyTimeout());
+			// Stop queuing results
+			collector.cancel();
+			if (result != null) {
+				return result;
+			}
+		}
+		return null;
 	}
 
 	/**
