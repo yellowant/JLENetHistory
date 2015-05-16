@@ -136,6 +136,7 @@ public class HistoryTreeBlock extends HistoryBlock {
 		checksum = null;
 	}
 	public void setBlock(int index, HistoryBlock htb) {
+		ensureLoaded();
 		children[index] = htb;
 	}
 	@Override

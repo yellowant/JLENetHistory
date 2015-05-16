@@ -61,7 +61,7 @@ public class History {
 	 *            the Message to add. (Remember to {@link #store()} if you want
 	 *            the Message to be on the disk.
 	 */
-	public void addMessage(HistoryEntry hm) {
+	public synchronized void addMessage(HistoryEntry hm) {
 		((HistoryLeafNode) getAnyBlock(hm.getTime(), LEVELS)).add(hm);
 		modified(hm.getTime());
 
@@ -168,7 +168,7 @@ public class History {
 	 * 
 	 * @return the number of root blocks.
 	 */
-	public int getLastCount() {
+	protected int getLastCount() {
 		return years.size();
 	}
 
@@ -183,8 +183,8 @@ public class History {
 	 *            the last millisecond to which messages will be retrived
 	 * @return the messages
 	 */
-	public Set<HistoryEntry> getMessages(String bareJid, long from,
-			final long to) {
+	public synchronized Set<HistoryEntry> getMessages(String bareJid,
+			long from, final long to) {
 		HistoryEntry dummyFrom = new HistoryEntry(from);
 		HistoryEntry dummyTo = new HistoryEntry(to + 1);
 
@@ -266,7 +266,7 @@ public class History {
 	/**
 	 * Stores all changes in this history to the underlying file.
 	 */
-	public void store() {
+	public synchronized void store() {
 		for (int i = 0; i < years.size(); i++) {
 			if (years.get(i) != null) {
 				int files = reconcile(years.get(i), Integer.toString(i),
@@ -341,7 +341,7 @@ public class History {
 	 * @throws IOException
 	 *             if harddrive is nervous
 	 */
-	public void compact(String prefix, HistoryTreeBlock hb)
+	protected void compact(String prefix, HistoryTreeBlock hb)
 			throws TransformerFactoryConfigurationError,
 			TransformerConfigurationException, SAXException, IOException {
 		File file = new File(base, prefix + ".xml.new");
@@ -518,7 +518,9 @@ public class History {
 	 */
 	public static IQ getResponse(Connection conn, IQ packet) {
 		for (int ctr = 0; ctr < 10; ctr++) {
-
+			if (ctr != 0) {
+				System.out.println("ctr: " + ctr);
+			}
 			PacketCollector collector = conn
 					.createPacketCollector(new AndFilter(new PacketIDFilter(
 							packet.getPacketID()), new IQTypeFilter(
