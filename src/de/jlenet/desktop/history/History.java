@@ -355,8 +355,13 @@ public class History {
 		hb.filesCount = 1;
 		clean(hb, prefix);
 		hb.ownFile = true;
-		file.renameTo(new File(base, prefix + ".xml"));
+		File target = new File(base, prefix + ".xml");
+		file.renameTo(target);
 		hb.filesCount = 1;
+		// unload
+		hb.children = null;
+		hb.offset = 0;
+		hb.myPosition = target;
 	}
 
 	/**

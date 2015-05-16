@@ -1,5 +1,8 @@
 package de.jlenet.desktop.history;
 
+import static de.jlenet.desktop.history.History.BITS_PER_LEVEL;
+import static de.jlenet.desktop.history.History.LEVELS;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -13,8 +16,6 @@ import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
-
-import static de.jlenet.desktop.history.History.*;
 
 public class HistoryTreeBlock extends HistoryBlock {
 	HistoryBlock[] children = new HistoryBlock[1 << BITS_PER_LEVEL];
@@ -96,6 +97,7 @@ public class HistoryTreeBlock extends HistoryBlock {
 		return getBlock(count, false);
 	}
 	public HistoryBlock getBlock(int count, boolean peek) {
+		ensureLoaded();
 		HistoryBlock hb = children[count];
 		if (hb == null) {
 			if (peek) {
@@ -107,8 +109,6 @@ public class HistoryTreeBlock extends HistoryBlock {
 				hb = new HistoryTreeBlock(level + 1);
 			}
 			children[count] = hb;
-		} else {
-			hb.ensureLoaded();
 		}
 		return hb;
 	}
@@ -140,27 +140,28 @@ public class HistoryTreeBlock extends HistoryBlock {
 	}
 	@Override
 	public void ensureLoaded() {
-		if (children == null) {
-			PositionAwareMXParser pamp = new PositionAwareMXParser();
-			try {
-				InputStreamReader fr = new InputStreamReader(
-						new FileInputStream(myPosition), "UTF-8");
-				fr.skip(offset);
-				pamp.setInput(fr, offset, myPosition);
-				pamp.nextTag();// root
-				pamp.nextTag();// firstChild
-				children = new HistoryBlock[History.CHILDREN_PER_LEVEL];
-				load(pamp);
-				if (pamp.getDepth() != 1) {
-					System.err.println("Something is badly wrong");
-				}
-				fr.close();
-
-			} catch (XmlPullParserException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
+		if (children != null) {
+			return;
+		}
+		PositionAwareMXParser pamp = new PositionAwareMXParser();
+		try {
+			InputStreamReader fr = new InputStreamReader(new FileInputStream(
+					myPosition), "UTF-8");
+			fr.skip(offset);
+			pamp.setInput(fr, offset, myPosition);
+			pamp.nextTag();// root
+			pamp.nextTag();// firstChild
+			children = new HistoryBlock[History.CHILDREN_PER_LEVEL];
+			load(pamp);
+			if (pamp.getDepth() != 1) {
+				System.err.println("Something is badly wrong");
 			}
+			fr.close();
+
+		} catch (XmlPullParserException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 	@Override
