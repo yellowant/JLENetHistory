@@ -346,7 +346,7 @@ public class History {
 			TransformerConfigurationException, SAXException, IOException {
 		File file = new File(base, prefix + ".xml.new");
 		export(hb, new FileOutputStream(file));
-		File ready = new File(prefix + ".xml.ready");
+		File ready = new File(base, prefix + ".xml.ready");
 		file.renameTo(ready);
 		file = ready;
 		if (Debug.ENABLED) {
