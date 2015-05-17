@@ -12,9 +12,13 @@ public class HistorySyncSet extends IQ {
 	SortedSet<HistoryEntry> messages = new TreeSet<HistoryEntry>();
 	long hour;
 	String checksum;
+	boolean update = false;
 	public HistorySyncSet(long hour, String checksum) {
 		this.hour = hour;
 		this.checksum = checksum;
+	}
+	public void setUpdate(boolean update) {
+		this.update = update;
 	}
 	public void addMessage(HistoryEntry message) {
 		messages.add(message);
@@ -25,7 +29,13 @@ public class HistorySyncSet extends IQ {
 	@Override
 	public String getChildElementXML() {
 		StringWriter sw = new StringWriter();
-		sw.write("<syncSet xmlns=\"http://jlenet.de/histsync#syncSet\" hour=\"");
+		if (update) {
+			sw.write("<syncUpdate");
+		} else {
+			sw.write("<syncSet");
+		}
+		sw.write(" xmlns=\"http://jlenet.de/histsync#sync"
+				+ (update ? "Update" : "Set") + "\" hour=\"");
 		sw.write(Long.toString(hour));
 		sw.write("\"");
 		if (checksum != null) {
@@ -37,7 +47,11 @@ public class HistorySyncSet extends IQ {
 		for (HistoryEntry hm : messages) {
 			sw.append(hm.toXML());
 		}
-		sw.write("</syncSet>");
+		if (update) {
+			sw.write("</syncUpdate>");
+		} else {
+			sw.write("</syncSet>");
+		}
 		return sw.toString();
 	}
 	public long getHour() {
@@ -48,6 +62,9 @@ public class HistorySyncSet extends IQ {
 	}
 	public String getChecksum() {
 		return checksum;
+	}
+	public boolean isUpdate() {
+		return update;
 	}
 
 }

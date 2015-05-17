@@ -1,5 +1,6 @@
 package de.jlenet.desktop.history.packet;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.TreeSet;
 
@@ -30,7 +31,6 @@ public class HistorySyncService {
 
 			@Override
 			public void processPacket(Packet packet) {
-				System.out.println("Got packet!");
 				try {
 					if (!StringUtils.parseBareAddress(packet.getFrom()).equals(
 							jid)) {
@@ -55,13 +55,15 @@ public class HistorySyncService {
 
 			@Override
 			public void processPacket(Packet packet) {
-				System.out.println("Got other packet!");
 				if (!StringUtils.parseBareAddress(packet.getFrom()).equals(jid)) {
 					error(packet, theConnection);
 					return;
 				}
 
 				HistorySyncSet sync = (HistorySyncSet) packet;
+				if (sync.isUpdate()) {
+					return;
+				}
 				if (Debug.ENABLED) {
 					System.out.println("sync pack");
 				}
@@ -128,14 +130,69 @@ public class HistorySyncService {
 				}
 			}
 		}, new PacketTypeFilter(HistorySyncSet.class));
+		theConnection.addPacketListener(new PacketListener() {
+
+			@Override
+			public void processPacket(Packet packet) {
+				if (!StringUtils.parseBareAddress(packet.getFrom()).equals(jid)) {
+					error(packet, theConnection);
+					return;
+				}
+
+				HistorySyncSet sync = (HistorySyncSet) packet;
+				if (!sync.isUpdate()) {
+					return;
+				}
+				if (sync.getType() != IQ.Type.SET) {
+					return;
+				}
+				HistoryLeafNode hln = (HistoryLeafNode) h.getAnyBlock(
+						sync.getHour() * History.BASE, History.LEVELS);
+				if (Debug.ENABLED) {
+					System.out.println("Have: " + hln.getMessages().size());
+					System.out.println("Got: " + sync.getMessages().size());
+				}
+
+				hln.getMessages().addAll(sync.getMessages());
+				h.modified(sync.getHour() * History.BASE);
+				h.store();
+
+				byte[] myChecksum = hln.getChecksum();
+				String status;
+				if (!Arrays.equals(myChecksum,
+						History.parseChecksum(sync.getChecksum()))) {
+					status = "success";
+				} else {
+					status = "mismatch";
+				}
+				HistorySyncUpdateResponse hss = new HistorySyncUpdateResponse(
+						status);
+				hss.setType(IQ.Type.RESULT);
+				hss.setTo(sync.getFrom());
+				hss.setPacketID(sync.getPacketID());
+				if (Debug.ENABLED) {
+					System.out.println("update was: " + status);
+				}
+				theConnection.sendPacket(hss);
+
+				if (Debug.ENABLED) {
+					System.out.println("now Have: " + hln.getMessages().size());
+				}
+			}
+		}, new PacketTypeFilter(HistorySyncSet.class));
 		ProviderManager.getInstance().addIQProvider("query",
 				"http://jlenet.de/histsync", new HistorySyncQueryProvider());
 		ProviderManager.getInstance().addIQProvider("hashes",
 				"http://jlenet.de/histsync#hashes",
 				new HistorySyncResponseProvider());
+
+		HistorySyncSetProvider setProvider = new HistorySyncSetProvider();
 		ProviderManager.getInstance().addIQProvider("syncSet",
-				"http://jlenet.de/histsync#syncSet",
-				new HistorySyncSetProvider());
+				"http://jlenet.de/histsync#syncSet", setProvider);
+		ProviderManager.getInstance().addIQProvider("syncUpdate",
+				"http://jlenet.de/histsync#syncUpdate", setProvider);
+		ProviderManager.getInstance().addIQProvider("syncStatus",
+				"http://jlenet.de/histsync#syncStatus", setProvider);
 		ServiceDiscoveryManager manager = ServiceDiscoveryManager
 				.getInstanceFor(theConnection);
 		manager.addFeature("http://jlenet.de/histsync#disco");

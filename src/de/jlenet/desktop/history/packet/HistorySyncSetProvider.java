@@ -10,13 +10,29 @@ public class HistorySyncSetProvider implements IQProvider {
 
 	@Override
 	public IQ parseIQ(XmlPullParser parser) throws Exception {
-		HistorySyncSet hsh = new HistorySyncSet(Long.parseLong(parser
-				.getAttributeValue(null, "hour")), parser.getAttributeValue(
-				null, "checksum"));
-		while (parser.nextTag() == XmlPullParser.START_TAG) {
-			hsh.addMessage(new HistoryEntry(parser));
+		if (parser.getName().equals("syncSet")) {
+			HistorySyncSet hsh = new HistorySyncSet(Long.parseLong(parser
+					.getAttributeValue(null, "hour")),
+					parser.getAttributeValue(null, "checksum"));
+			while (parser.nextTag() == XmlPullParser.START_TAG) {
+				hsh.addMessage(new HistoryEntry(parser));
+			}
+			return hsh;
+		} else if (parser.getName().equals("syncUpdate")) {
+
+			HistorySyncSet hsh = new HistorySyncSet(Long.parseLong(parser
+					.getAttributeValue(null, "hour")),
+					parser.getAttributeValue(null, "checksum"));
+			while (parser.nextTag() == XmlPullParser.START_TAG) {
+				hsh.addMessage(new HistoryEntry(parser));
+			}
+			hsh.setUpdate(true);
+			return hsh;
+		} else {
+			String status = parser.getAttributeValue(null, "status");
+			parser.nextTag();
+			return new HistorySyncUpdateResponse(status);
 		}
-		return hsh;
 	}
 
 }
