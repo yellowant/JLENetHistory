@@ -1,22 +1,22 @@
 package de.jlenet.desktop.history;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
 import java.util.Set;
 
-import javax.xml.transform.TransformerConfigurationException;
-import javax.xml.transform.TransformerFactoryConfigurationError;
+import javax.xml.transform.TransformerException;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.xml.sax.SAXException;
 
 import de.jlenet.desktop.history.payloads.CompletedFileTransfer;
-import static org.junit.Assert.*;
 public class TestStoreAndLoad {
 	public static final long TEST_BASE = (1398959418266L / History.BASE)
 			* History.BASE;
@@ -53,8 +53,8 @@ public class TestStoreAndLoad {
 		h = new History(base);
 	}
 	@Test
-	public void testStoreAndLoad3() throws TransformerConfigurationException,
-			TransformerFactoryConfigurationError, SAXException, IOException {
+	public void testStoreAndLoad3() throws SAXException, IOException,
+			TransformerException {
 		History h = new History(base);
 		for (int i = 0; i < 512; i++) {
 			h.addMessage(new HistoryEntry("<message>test" + i + "</message>",
@@ -72,14 +72,21 @@ public class TestStoreAndLoad {
 
 		History h2 = new History(base);
 		File f = new File(base, "6.xml");
+		h2.compact("6", (HistoryTreeBlock) h2.getRootBlock(6));
 		byte[] oldData = readFile(f);
+		String s = new String(oldData);
+		oldData = (s.replace("> <block id", "><block id")).replaceAll(
+				">[\r\n]+<", "><").getBytes();
 		h2.compact("6", (HistoryTreeBlock) h2.getRootBlock(6));
 		HistoryTreeBlock htb = (HistoryTreeBlock) h2.getRootBlock(7);
 		htb.getBlock(0).getChecksum();
 		byte[] newData = readFile(f);
+		s = new String(newData);
+		newData = (s.replace("> <block id", "><block id").replaceAll(
+				">[\r\n]+<", "><")).getBytes();
 		assertArrayEquals(oldData, newData);
 	}
-	private byte[] readFile(File f) throws FileNotFoundException, IOException {
+	private byte[] readFile(File f) throws IOException {
 		byte[] buf = new byte[(int) f.length()];
 		RandomAccessFile raf = new RandomAccessFile(f, "r");
 		raf.readFully(buf);
@@ -113,9 +120,7 @@ public class TestStoreAndLoad {
 		assertEquals(base.listFiles().length, h2.getRootBlock(5).filesCount);
 		try {
 			h2.compact("5", (HistoryTreeBlock) h2.getRootBlock(5));
-		} catch (TransformerConfigurationException e) {
-			e.printStackTrace();
-		} catch (TransformerFactoryConfigurationError e) {
+		} catch (TransformerException e) {
 			e.printStackTrace();
 		} catch (SAXException e) {
 			e.printStackTrace();

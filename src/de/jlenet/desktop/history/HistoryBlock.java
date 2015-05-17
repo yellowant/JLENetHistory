@@ -2,10 +2,7 @@ package de.jlenet.desktop.history;
 
 import java.io.IOException;
 
-import javax.xml.transform.sax.TransformerHandler;
-
 import org.xml.sax.SAXException;
-import org.xml.sax.helpers.AttributesImpl;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
@@ -17,7 +14,7 @@ public abstract class HistoryBlock {
 
 	public abstract byte[] getChecksum();
 
-	public abstract void serialize(TransformerHandler hd, AttributesImpl atti)
+	public abstract void serialize(BlockOutput out)
 			throws SAXException;
 
 	public void modified(long time) {

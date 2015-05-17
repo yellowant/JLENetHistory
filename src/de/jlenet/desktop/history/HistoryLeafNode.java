@@ -48,8 +48,10 @@ public class HistoryLeafNode extends HistoryBlock {
 	}
 
 	@Override
-	public void serialize(TransformerHandler hd, AttributesImpl atti)
+	public void serialize(BlockOutput block)
 			throws SAXException {
+		TransformerHandler hd = block.getHandler();
+		AttributesImpl atti = block.getA();
 		for (HistoryEntry message : hmsg) {
 			message.serialize(hd, atti);
 		}

@@ -16,8 +16,8 @@ import org.jivesoftware.smackx.ServiceDiscoveryManager;
 
 import de.jlenet.desktop.history.Debug;
 import de.jlenet.desktop.history.History;
-import de.jlenet.desktop.history.HistoryLeafNode;
 import de.jlenet.desktop.history.HistoryEntry;
+import de.jlenet.desktop.history.HistoryLeafNode;
 
 public class HistorySyncService {
 
@@ -30,6 +30,7 @@ public class HistorySyncService {
 
 			@Override
 			public void processPacket(Packet packet) {
+				System.out.println("Got packet!");
 				try {
 					if (!StringUtils.parseBareAddress(packet.getFrom()).equals(
 							jid)) {
@@ -54,6 +55,7 @@ public class HistorySyncService {
 
 			@Override
 			public void processPacket(Packet packet) {
+				System.out.println("Got other packet!");
 				if (!StringUtils.parseBareAddress(packet.getFrom()).equals(jid)) {
 					error(packet, theConnection);
 					return;

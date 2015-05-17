@@ -2,11 +2,8 @@ package de.jlenet.desktop.history;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -19,6 +16,7 @@ import java.util.TreeSet;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.sax.SAXTransformerFactory;
 import javax.xml.transform.sax.TransformerHandler;
@@ -54,6 +52,7 @@ public class History {
 		base = file;
 		load();
 	}
+
 	/**
 	 * Adds a message to the History.
 	 * 
@@ -66,6 +65,7 @@ public class History {
 		modified(hm.getTime());
 
 	}
+
 	/**
 	 * How many bits of the timestamp will be used per sync-level.
 	 */
@@ -86,7 +86,7 @@ public class History {
 	/**
 	 * How many files are tried to create on the disk as a maximum.
 	 */
-	public static final int MAX_FILES = 16;
+	public static final int MAX_FILES = 64;
 
 	/**
 	 * Array of checksums for empty blocks. (from root to leaf)
@@ -134,6 +134,7 @@ public class History {
 		}
 		return hb;
 	}
+
 	/**
 	 * notify the tree of a Modification to be saved in subsequent
 	 * {@link #store()}-calls'
@@ -147,6 +148,7 @@ public class History {
 		HistoryBlock hb = getRootBlock(count);
 		hb.modified(recurseTime(time));
 	}
+
 	/**
 	 * Get the root block with the given index.
 	 * 
@@ -163,6 +165,7 @@ public class History {
 		}
 		return hb;
 	}
+
 	/**
 	 * get the number of root blocks
 	 * 
@@ -249,6 +252,7 @@ public class History {
 		}
 
 	}
+
 	/**
 	 * Increases the size of this history so that {@link #years} will be of at
 	 * least <code>count</code> size
@@ -267,6 +271,9 @@ public class History {
 	 * Stores all changes in this history to the underlying file.
 	 */
 	public synchronized void store() {
+		if (Debug.ENABLED) {
+			System.out.println("Lazy store begin");
+		}
 		for (int i = 0; i < years.size(); i++) {
 			if (years.get(i) != null) {
 				int files = reconcile(years.get(i), Integer.toString(i),
@@ -276,7 +283,11 @@ public class History {
 				}
 			}
 		}
+		if (Debug.ENABLED) {
+			System.out.println("Lazy store end");
+		}
 	}
+
 	/**
 	 * Updates all necessary files for the given block.
 	 * 
@@ -302,7 +313,7 @@ public class History {
 					if (child == null) {
 						continue;
 					}
-					count += reconcile(child, prefix + "_" + i, maxfiles);
+					count += reconcile(child, prefix + "_" + i, maxfiles / 2);
 				}
 				if (count >= maxfiles) {
 					compact(prefix, hb);
@@ -316,7 +327,7 @@ public class History {
 			}
 			historyBlock.modified = false;
 			File newFile = new File(base, prefix + ".xml.new");
-			export(historyBlock, new FileOutputStream(newFile));
+			export(historyBlock, newFile);
 			File newFileName = new File(base, prefix + ".xml");
 			newFileName.delete();
 			newFile.renameTo(newFileName);
@@ -325,6 +336,7 @@ public class History {
 			throw new Error(e);
 		}
 	}
+
 	/**
 	 * Compacts the given block to exactly one file (with the given prefix)
 	 * 
@@ -340,14 +352,20 @@ public class History {
 	 *             if XML is spooky
 	 * @throws IOException
 	 *             if harddrive is nervous
+	 * @throws TransformerException
 	 */
 	protected void compact(String prefix, HistoryTreeBlock hb)
-			throws TransformerFactoryConfigurationError,
-			TransformerConfigurationException, SAXException, IOException {
+			throws SAXException, IOException, TransformerException {
+		if (Debug.ENABLED) {
+			System.out.println(Arrays.toString(base.list()));
+		}
 		File file = new File(base, prefix + ".xml.new");
-		export(hb, new FileOutputStream(file));
+		export(hb, file);
 		File ready = new File(base, prefix + ".xml.ready");
-		file.renameTo(ready);
+		if (!file.renameTo(ready)) {
+			throw new IOException("error renaming file from " + file + " to "
+					+ ready);
+		}
 		file = ready;
 		if (Debug.ENABLED) {
 			System.out.println("compressing: " + prefix + ";" + base);
@@ -356,7 +374,13 @@ public class History {
 		clean(hb, prefix);
 		hb.ownFile = true;
 		File target = new File(base, prefix + ".xml");
-		file.renameTo(target);
+		if (!file.renameTo(target)) {
+			throw new IOException("error renaming file from " + file + " to "
+					+ target);
+		}
+		if (Debug.ENABLED) {
+			System.out.println(Arrays.toString(base.list()));
+		}
 		hb.filesCount = 1;
 		// unload
 		hb.children = null;
@@ -429,6 +453,7 @@ public class History {
 			throw new IOException(e);
 		}
 	}
+
 	/**
 	 * Export the given block to a output stream.
 	 * 
@@ -436,25 +461,24 @@ public class History {
 	 *            the block to write out.
 	 * @param os
 	 *            the stream to write to.
+	 * @throws TransformerException
 	 */
-	public static void export(HistoryBlock hb, OutputStream os)
-			throws TransformerFactoryConfigurationError,
-			TransformerConfigurationException, SAXException, IOException {
-		OutputStreamWriter wr = new OutputStreamWriter(os, "UTF-8");
-		TransformerHandler hd = createSax(wr);
-
+	public static void export(HistoryBlock hb, File os) throws SAXException,
+			IOException, TransformerException {
+		BlockOutput out = new BlockOutput(os);
+		TransformerHandler hd = out.getHandler();
+		AttributesImpl atti = out.getA();
 		hd.startDocument();
-		AttributesImpl atti = new AttributesImpl();
 		atti.addAttribute(null, null, "checksum", "CDATA",
 				beautifyChecksum(hb.getChecksum()));
 		hd.startElement("", "", "history", atti);
 		atti.clear();
-		hb.serialize(hd, atti);
+		hb.serialize(out);
 		hd.endElement("", "", "history");
 		hd.endDocument();
-		wr.flush();
-		wr.close();
+		out.close();
 	}
+
 	/**
 	 * Creates a default-configured SAX writer. (to this stream)
 	 * 
@@ -476,6 +500,7 @@ public class History {
 		hd.setResult(streamResult);
 		return hd;
 	}
+
 	/**
 	 * Creates a canonical representation for this checksum.
 	 * 
@@ -491,6 +516,7 @@ public class History {
 		}
 		return sb.toString();
 	}
+
 	/**
 	 * Parses a canonical checksum representation back to a byte array
 	 * 
@@ -607,6 +633,7 @@ public class History {
 			}
 		}
 	}
+
 	/**
 	 * returns the number of Atomic blocks in the given level block.
 	 * 
@@ -621,6 +648,7 @@ public class History {
 
 		return 1 << (BITS_PER_LEVEL * (LEVELS - i));
 	}
+
 	/**
 	 * returns the time that needs to be given to {@link #recurseTime(long)} and
 	 * to {@link #getMyCount(long)} for the underlying level.
