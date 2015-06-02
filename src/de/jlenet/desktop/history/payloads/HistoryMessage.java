@@ -10,7 +10,7 @@ public class HistoryMessage extends HistoryPayload {
 	}
 
 	public HistoryMessage(XmlPullParser xpp) throws Exception {
-		parsed = (Message) PacketParserUtils.parseMessage(xpp);
+		parsed = PacketParserUtils.parseMessage(xpp);
 	}
 
 	Message parsed = null;
@@ -19,7 +19,6 @@ public class HistoryMessage extends HistoryPayload {
 	}
 	@Override
 	public String toXML() {
-		return parsed.toXML();
+		return parsed.toString();
 	}
-
 }

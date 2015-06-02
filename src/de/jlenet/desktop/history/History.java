@@ -22,12 +22,13 @@ import javax.xml.transform.sax.SAXTransformerFactory;
 import javax.xml.transform.sax.TransformerHandler;
 import javax.xml.transform.stream.StreamResult;
 
-import org.jivesoftware.smack.Connection;
 import org.jivesoftware.smack.PacketCollector;
 import org.jivesoftware.smack.SmackConfiguration;
+import org.jivesoftware.smack.SmackException.NotConnectedException;
+import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.filter.AndFilter;
 import org.jivesoftware.smack.filter.IQTypeFilter;
-import org.jivesoftware.smack.filter.PacketIDFilter;
+import org.jivesoftware.smack.filter.StanzaIdFilter;
 import org.jivesoftware.smack.packet.IQ;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
@@ -541,22 +542,23 @@ public class History {
 	 * @param packet
 	 *            the packet to send
 	 * @return the response (in default response time (def. 5sec)).
+	 * @throws NotConnectedException
 	 */
-	public static IQ getResponse(Connection conn, IQ packet) {
+	public static IQ getResponse(XMPPConnection conn, IQ packet)
+			throws NotConnectedException {
 		for (int ctr = 0; ctr < 10; ctr++) {
 			if (ctr != 0) {
 				System.out.println("ctr: " + ctr);
 			}
 			PacketCollector collector = conn
-					.createPacketCollector(new AndFilter(new PacketIDFilter(
-							packet.getPacketID()), new IQTypeFilter(
-							IQ.Type.RESULT)));
+					.createPacketCollector(new AndFilter(new StanzaIdFilter(
+							packet.getStanzaId()), IQTypeFilter.RESULT));
 
-			conn.sendPacket(packet);
+			conn.sendStanza(packet);
 
 			// Wait up to 5 seconds for a result.
 			IQ result = (IQ) collector.nextResult(SmackConfiguration
-					.getPacketReplyTimeout());
+					.getDefaultPacketReplyTimeout());
 			// Stop queuing results
 			collector.cancel();
 			if (result != null) {

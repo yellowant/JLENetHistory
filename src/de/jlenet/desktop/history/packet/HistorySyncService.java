@@ -4,16 +4,18 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.TreeSet;
 
-import org.jivesoftware.smack.Connection;
-import org.jivesoftware.smack.PacketListener;
-import org.jivesoftware.smack.filter.PacketTypeFilter;
+import org.jivesoftware.smack.SmackException.NotConnectedException;
+import org.jivesoftware.smack.StanzaListener;
+import org.jivesoftware.smack.XMPPConnection;
+import org.jivesoftware.smack.filter.StanzaTypeFilter;
+import org.jivesoftware.smack.packet.EmptyResultIQ;
 import org.jivesoftware.smack.packet.IQ;
-import org.jivesoftware.smack.packet.Packet;
+import org.jivesoftware.smack.packet.Stanza;
 import org.jivesoftware.smack.packet.XMPPError;
 import org.jivesoftware.smack.packet.XMPPError.Condition;
 import org.jivesoftware.smack.provider.ProviderManager;
-import org.jivesoftware.smack.util.StringUtils;
-import org.jivesoftware.smackx.ServiceDiscoveryManager;
+import org.jivesoftware.smackx.disco.ServiceDiscoveryManager;
+import org.jxmpp.util.XmppStringUtils;
 
 import de.jlenet.desktop.history.Debug;
 import de.jlenet.desktop.history.History;
@@ -22,53 +24,55 @@ import de.jlenet.desktop.history.HistoryLeafNode;
 
 public class HistorySyncService {
 
-	public static void initialize(final Connection theConnection,
+	public static void initialize(final XMPPConnection theConnection,
 			final History h) {
-		final String jid = StringUtils
-				.parseBareAddress(theConnection.getUser());
+		final String jid = XmppStringUtils
+				.parseBareJid(theConnection.getUser());
 		// Hash fetch service
-		theConnection.addPacketListener(new PacketListener() {
+		theConnection.addAsyncStanzaListener(new StanzaListener() {
 
 			@Override
-			public void processPacket(Packet packet) {
+			public void processPacket(Stanza packet) {
 				try {
-					if (!StringUtils.parseBareAddress(packet.getFrom()).equals(
+					HistorySyncQuery query = (HistorySyncQuery) packet;
+					if (query.getType() != IQ.Type.get) {
+						return;
+					}
+					if (!XmppStringUtils.parseBareJid(packet.getFrom()).equals(
 							jid)) {
-						error(packet, theConnection);
+						error(query, theConnection);
 						return;
 					}
 
-					HistorySyncQuery query = (HistorySyncQuery) packet;
-					if (query.getType() == IQ.Type.GET) {
-						HistorySyncHashes response = query.reply(h);
-						theConnection.sendPacket(response);
-					}
+					HistorySyncHashes response = query.reply(h);
+					theConnection.sendStanza(response);
 				} catch (Throwable t) {
 					t.printStackTrace();
 				}
 			}
 
-		}, new PacketTypeFilter(HistorySyncQuery.class));
+		}, new StanzaTypeFilter(HistorySyncQuery.class));
 
 		// sync service
-		theConnection.addPacketListener(new PacketListener() {
+		theConnection.addAsyncStanzaListener(new StanzaListener() {
 
 			@Override
-			public void processPacket(Packet packet) {
-				if (!StringUtils.parseBareAddress(packet.getFrom()).equals(jid)) {
-					error(packet, theConnection);
+			public void processPacket(Stanza packet)
+					throws NotConnectedException {
+				HistorySyncSet sync = (HistorySyncSet) packet;
+				if (sync.getType() != IQ.Type.set) {
+					return;
+				}
+				if (!XmppStringUtils.parseBareJid(packet.getFrom()).equals(jid)) {
+					error(sync, theConnection);
 					return;
 				}
 
-				HistorySyncSet sync = (HistorySyncSet) packet;
 				if (sync.isUpdate()) {
 					return;
 				}
 				if (Debug.ENABLED) {
 					System.out.println("sync pack");
-				}
-				if (sync.getType() != IQ.Type.SET) {
-					return;
 				}
 				HistoryLeafNode hln = (HistoryLeafNode) h.getAnyBlock(
 						sync.getHour() * History.BASE, History.LEVELS);
@@ -115,12 +119,12 @@ public class HistorySyncService {
 				h.modified(sync.getHour() * History.BASE);
 				// Construct response
 				HistorySyncSet hss = new HistorySyncSet(sync.getHour(), History
-						.beautifyChecksum(hln.getChecksum()));
+						.beautifyChecksum(hln.getChecksum()), false);
 				hss.setMessages(forOther);
-				hss.setType(IQ.Type.RESULT);
+				hss.setType(IQ.Type.result);
 				hss.setTo(sync.getFrom());
-				hss.setPacketID(sync.getPacketID());
-				theConnection.sendPacket(hss);
+				hss.setStanzaId(sync.getStanzaId());
+				theConnection.sendStanza(hss);
 				h.store();
 
 				if (Debug.ENABLED) {
@@ -129,21 +133,22 @@ public class HistorySyncService {
 					System.out.println("for other: " + forOther.size());
 				}
 			}
-		}, new PacketTypeFilter(HistorySyncSet.class));
-		theConnection.addPacketListener(new PacketListener() {
+		}, new StanzaTypeFilter(HistorySyncSet.class));
+		theConnection.addAsyncStanzaListener(new StanzaListener() {
 
 			@Override
-			public void processPacket(Packet packet) {
-				if (!StringUtils.parseBareAddress(packet.getFrom()).equals(jid)) {
-					error(packet, theConnection);
+			public void processPacket(Stanza packet)
+					throws NotConnectedException {
+				HistorySyncSet sync = (HistorySyncSet) packet;
+				if (sync.getType() != IQ.Type.set) {
+					return;
+				}
+				if (!XmppStringUtils.parseBareJid(packet.getFrom()).equals(jid)) {
+					error(sync, theConnection);
 					return;
 				}
 
-				HistorySyncSet sync = (HistorySyncSet) packet;
 				if (!sync.isUpdate()) {
-					return;
-				}
-				if (sync.getType() != IQ.Type.SET) {
 					return;
 				}
 				HistoryLeafNode hln = (HistoryLeafNode) h.getAnyBlock(
@@ -167,50 +172,46 @@ public class HistorySyncService {
 				}
 				HistorySyncUpdateResponse hss = new HistorySyncUpdateResponse(
 						status);
-				hss.setType(IQ.Type.RESULT);
+				hss.setType(IQ.Type.result);
 				hss.setTo(sync.getFrom());
-				hss.setPacketID(sync.getPacketID());
+				hss.setStanzaId(sync.getStanzaId());
 				if (Debug.ENABLED) {
 					System.out.println("update was: " + status);
 				}
-				theConnection.sendPacket(hss);
+				theConnection.sendStanza(hss);
 
 				if (Debug.ENABLED) {
 					System.out.println("now Have: " + hln.getMessages().size());
 				}
 			}
-		}, new PacketTypeFilter(HistorySyncSet.class));
-		ProviderManager.getInstance().addIQProvider("query",
-				"http://jlenet.de/histsync", new HistorySyncQueryProvider());
-		ProviderManager.getInstance().addIQProvider("hashes",
+		}, new StanzaTypeFilter(HistorySyncSet.class));
+		ProviderManager.addIQProvider("query", "http://jlenet.de/histsync",
+				new HistorySyncQueryProvider());
+		ProviderManager.addIQProvider("hashes",
 				"http://jlenet.de/histsync#hashes",
 				new HistorySyncResponseProvider());
 
 		HistorySyncSetProvider setProvider = new HistorySyncSetProvider();
-		ProviderManager.getInstance().addIQProvider("syncSet",
+		ProviderManager.addIQProvider("syncSet",
 				"http://jlenet.de/histsync#syncSet", setProvider);
-		ProviderManager.getInstance().addIQProvider("syncUpdate",
+		ProviderManager.addIQProvider("syncUpdate",
 				"http://jlenet.de/histsync#syncUpdate", setProvider);
-		ProviderManager.getInstance().addIQProvider("syncStatus",
-				"http://jlenet.de/histsync#syncStatus", setProvider);
+		ProviderManager.addIQProvider("syncStatus",
+				"http://jlenet.de/histsync#syncStatus",
+				new HistorySyncUpdateResponse.Provider());
+
 		ServiceDiscoveryManager manager = ServiceDiscoveryManager
 				.getInstanceFor(theConnection);
 		manager.addFeature("http://jlenet.de/histsync#disco");
 	}
-	private static void error(Packet packet, Connection theConnection) {
-		IQ error = new IQ() {
-
-			@Override
-			public String getChildElementXML() {
-				return null;
-			}
-
-		};
-		error.setType(IQ.Type.ERROR);
+	private static void error(IQ packet, XMPPConnection theConnection)
+			throws NotConnectedException {
+		IQ error = new EmptyResultIQ(packet);
+		error.setType(IQ.Type.error);
 		error.setError(new XMPPError(Condition.forbidden));
-		error.setPacketID(packet.getPacketID());
+		error.setStanzaId(packet.getStanzaId());
 		error.setTo(packet.getFrom());
-		theConnection.sendPacket(error);
+		theConnection.sendStanza(error);
 
 	}
 

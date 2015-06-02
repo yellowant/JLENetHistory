@@ -6,6 +6,7 @@ import org.jivesoftware.smack.packet.IQ;
 
 public class HistorySyncHashes extends IQ {
 	public HistorySyncHashes() {
+		super("hashes", "http://jlenet.de/histsync#hashes");
 	}
 	public class Hash {
 		String hash;
@@ -35,20 +36,17 @@ public class HistorySyncHashes extends IQ {
 		hashes.add(new Hash(hash, level, id));
 	}
 	@Override
-	public String getChildElementXML() {
-		StringBuffer xml = new StringBuffer();
-		xml.append("<hashes xmlns=\"http://jlenet.de/histsync#hashes\">");
+	protected IQChildElementXmlStringBuilder getIQChildElementBuilder(
+			IQChildElementXmlStringBuilder xml) {
+		xml.rightAngleBracket();
 		for (Hash h : hashes) {
-			xml.append("<hash value=\"");
-			xml.append(h.hash);
-			xml.append("\" level=\"");
-			xml.append(Integer.toString(h.level));
-			xml.append("\" id=\"");
-			xml.append(Integer.toString(h.id));
-			xml.append("\"/>");
+			xml.halfOpenElement("hash");
+			xml.attribute("value", h.hash);
+			xml.attribute("level", h.level);
+			xml.attribute("id", h.id);
+			xml.closeEmptyElement();
 		}
-		xml.append("</hashes>");
-		return xml.toString();
+		return xml;
 	}
 	@Override
 	public String toString() {

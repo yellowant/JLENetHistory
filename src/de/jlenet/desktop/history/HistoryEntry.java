@@ -8,7 +8,7 @@ import java.security.NoSuchAlgorithmException;
 import javax.xml.transform.sax.TransformerHandler;
 
 import org.jivesoftware.smack.packet.Message;
-import org.jivesoftware.smack.util.StringUtils;
+import org.jxmpp.util.XmppStringUtils;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 import org.xmlpull.mxp1.MXParser;
@@ -32,8 +32,8 @@ public class HistoryEntry implements Comparable<HistoryEntry> {
 	public HistoryEntry(Message mes, long time, boolean isOutgoing) {
 		this.time = time;
 		parsed = new HistoryMessage(mes);
-		contents = mes.toXML();
-		correspondent = StringUtils.parseBareAddress(isOutgoing
+		contents = mes.toXML().toString();
+		correspondent = XmppStringUtils.parseBareJid(isOutgoing
 				? mes.getTo()
 				: mes.getFrom());
 		this.isOutgoing = isOutgoing;
@@ -47,7 +47,7 @@ public class HistoryEntry implements Comparable<HistoryEntry> {
 			boolean isOutgoing) {
 		this.time = time;
 		this.contents = contents;
-		this.correspondent = StringUtils.parseBareAddress(correspondent);
+		this.correspondent = XmppStringUtils.parseBareJid(correspondent);
 		this.isOutgoing = isOutgoing;
 	}
 	public HistoryEntry(XmlPullParser xpp) throws XmlPullParserException,

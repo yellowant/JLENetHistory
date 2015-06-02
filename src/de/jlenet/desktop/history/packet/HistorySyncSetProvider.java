@@ -1,38 +1,30 @@
 package de.jlenet.desktop.history.packet;
 
-import org.jivesoftware.smack.packet.IQ;
+import java.io.IOException;
+
+import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.provider.IQProvider;
 import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
 
 import de.jlenet.desktop.history.HistoryEntry;
 
-public class HistorySyncSetProvider implements IQProvider {
-
+public class HistorySyncSetProvider extends IQProvider<HistorySyncSet> {
 	@Override
-	public IQ parseIQ(XmlPullParser parser) throws Exception {
-		if (parser.getName().equals("syncSet")) {
-			HistorySyncSet hsh = new HistorySyncSet(Long.parseLong(parser
-					.getAttributeValue(null, "hour")),
-					parser.getAttributeValue(null, "checksum"));
-			while (parser.nextTag() == XmlPullParser.START_TAG) {
-				hsh.addMessage(new HistoryEntry(parser));
-			}
-			return hsh;
-		} else if (parser.getName().equals("syncUpdate")) {
-
-			HistorySyncSet hsh = new HistorySyncSet(Long.parseLong(parser
-					.getAttributeValue(null, "hour")),
-					parser.getAttributeValue(null, "checksum"));
-			while (parser.nextTag() == XmlPullParser.START_TAG) {
-				hsh.addMessage(new HistoryEntry(parser));
-			}
-			hsh.setUpdate(true);
-			return hsh;
-		} else {
-			String status = parser.getAttributeValue(null, "status");
-			parser.nextTag();
-			return new HistorySyncUpdateResponse(status);
+	public HistorySyncSet parse(XmlPullParser parser, int initialDepth)
+			throws XmlPullParserException, IOException, SmackException {
+		if (!parser.getName().equals("syncSet")
+				&& !parser.getName().equals("syncUpdate")) {
+			throw new SmackException("invalid type" + parser.getName());
 		}
+
+		HistorySyncSet hsh = new HistorySyncSet(Long.parseLong(parser
+				.getAttributeValue(null, "hour")), parser.getAttributeValue(
+				null, "checksum"), parser.getName().equals("syncUpdate"));
+		while (parser.nextTag() == XmlPullParser.START_TAG) {
+			hsh.addMessage(new HistoryEntry(parser));
+		}
+		return hsh;
 	}
 
 }

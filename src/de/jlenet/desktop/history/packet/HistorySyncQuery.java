@@ -1,6 +1,7 @@
 package de.jlenet.desktop.history.packet;
 
-import org.jivesoftware.smack.Connection;
+import org.jivesoftware.smack.SmackException.NotConnectedException;
+import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.packet.IQ;
 
 import de.jlenet.desktop.history.History;
@@ -12,24 +13,29 @@ public class HistorySyncQuery extends IQ {
 	int level;
 	boolean path;
 	public HistorySyncQuery(long hour, boolean path, int level) {
+		super("query", "http://jlenet.de/histsync");
 		this.hour = hour;
 		this.path = path;
 		this.level = level;
-		setType(Type.GET);
+		setType(Type.get);
 	}
-
 	@Override
-	public String getChildElementXML() {
-		return "<query xmlns=\"http://jlenet.de/histsync\" type=\""
-				+ (path ? "latest" : "tree") + "\" hour=\"" + hour
-				+ (level == -1 ? "" : "\" level=\"" + level) + "\"/>";
+	protected IQChildElementXmlStringBuilder getIQChildElementBuilder(
+			IQChildElementXmlStringBuilder xml) {
+		xml.attribute("type", (path ? "latest" : "tree"));
+		xml.attribute("hour", Long.toString(hour));
+		if (level != -1) {
+			xml.attribute("level", level);
+		}
+		xml.setEmptyElement();
+		return xml;
 	}
 
 	public HistorySyncHashes reply(History h) {
 		HistorySyncHashes response = new HistorySyncHashes();
 		response.setTo(getFrom());
-		response.setType(Type.RESULT);
-		response.setPacketID(getPacketID());
+		response.setType(Type.result);
+		response.setStanzaId(getStanzaId());
 		if (path) {
 			int myCount = History.getMyCount(hour);
 			HistoryBlock block = h.getRootBlock(myCount);
@@ -63,7 +69,8 @@ public class HistorySyncQuery extends IQ {
 		}
 		return response;
 	}
-	public HistorySyncHashes execute(Connection conn) {
+	public HistorySyncHashes execute(XMPPConnection conn)
+			throws NotConnectedException {
 		return (HistorySyncHashes) History.getResponse(conn, this);
 	}
 

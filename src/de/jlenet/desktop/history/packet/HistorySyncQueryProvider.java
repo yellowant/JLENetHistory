@@ -1,13 +1,16 @@
 package de.jlenet.desktop.history.packet;
 
-import org.jivesoftware.smack.packet.IQ;
+import java.io.IOException;
+
+import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.provider.IQProvider;
 import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
 
-public class HistorySyncQueryProvider implements IQProvider {
-
+public class HistorySyncQueryProvider extends IQProvider<HistorySyncQuery> {
 	@Override
-	public IQ parseIQ(XmlPullParser parser) throws Exception {
+	public HistorySyncQuery parse(XmlPullParser parser, int initialDepth)
+			throws XmlPullParserException, IOException, SmackException {
 		String queryType = parser.getAttributeValue(null, "type");
 		boolean path;
 		if (queryType.equals("latest")) {

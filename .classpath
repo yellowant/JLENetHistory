@@ -5,7 +5,7 @@
 	<classpathentry kind="src" path="release-src"/>
 	<classpathentry excluding="de/jlenet/desktop/history/Debug.java" kind="src" path="debug-src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/SMACK"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/smack4"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
