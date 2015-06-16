@@ -26,6 +26,7 @@ public class SyncerService {
 	History h;
 	XMPPConnection theConnection;
 	HashSet<String> str = new HashSet<>();
+	HashSet<String> toBeProcessed = new HashSet<>();
 	private String self;
 
 	public SyncerService(History h, XMPPConnection theConnection) {
@@ -42,24 +43,28 @@ public class SyncerService {
 						&& !from.equals(self)) {
 					System.out.println(from);
 					System.out.println(((Presence) packet).getType());
-					if (((Presence) packet).getType() == Type.available) {
-						if (!str.contains(from)) {
-							str.add(from); // user is coming online
-							new Thread(new Runnable() {
+					synchronized (this) {
+						if (((Presence) packet).getType() == Type.available) {
+							if (!str.contains(from)
+									&& !toBeProcessed.contains(from)) {
+								toBeProcessed.add(from); // user is coming online
+								new Thread(new Runnable() {
 
-								@Override
-								public void run() {
-									try {
-										sync(from);
-									} catch (NotConnectedException e) {
-										e.printStackTrace();
+									@Override
+									public void run() {
+										try {
+											tryComeOnline(from);
+										} catch (XMPPException e) {
+											e.printStackTrace();
+										} catch (NotConnectedException e) {
+											e.printStackTrace();
+										}
 									}
-
-								}
-							}).start();
+								}).start();
+							}
+						} else if (((Presence) packet).getType() == Type.unavailable) {
+							str.remove(from);
 						}
-					} else if (((Presence) packet).getType() == Type.unavailable) {
-						str.remove(from);
 					}
 				}
 			}
@@ -72,39 +77,15 @@ public class SyncerService {
 		});
 	}
 	private void sync(String peer) throws NotConnectedException {
-		ServiceDiscoveryManager sdm = ServiceDiscoveryManager
-				.getInstanceFor(theConnection);
-		try {
-			System.out.println("sync, but waiting for android to be ready !!!");
-			try {
-				Thread.sleep(10000);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-			System.out.println(peer);
-			try {
-				DiscoverInfo disco = sdm.discoverInfo(peer);
-				if (disco.containsFeature("http://jlenet.de/histsync#disco")) {
-					System.out.println("sync starting");
-					long currentTimeMillis = System.currentTimeMillis();
-					synchronized (h) {
-						syncRec(h.getAnyBlock(currentTimeMillis, 0),
-								currentTimeMillis / History.BASE, 0, peer);
-						h.store();
-					}
-					System.out.println("sync done");
-					return;
-				} else {
-					System.out.println("not supported!");
-					// sync not acceptable
-				}
-			} catch (NoResponseException e) {
-				System.out.println("not supported!");
-				// sync not acceptable
-			}
-		} catch (XMPPException e) {
-			e.printStackTrace();
+
+		System.out.println("sync starting");
+		long currentTimeMillis = System.currentTimeMillis();
+		synchronized (h) {
+			syncRec(h.getAnyBlock(currentTimeMillis, 0), currentTimeMillis
+					/ History.BASE, 0, peer);
+			h.store();
 		}
+		System.out.println("sync done");
 
 	}
 	public void syncToAll(final HistoryEntry hm) {
@@ -190,6 +171,34 @@ public class SyncerService {
 				syncRec(htb.getBlock(hash.getId()), hour + hash.getId()
 						* History.getHoursPerBlock(level + 1), level + 1, peer);
 			}
+		}
+
+	}
+	private void tryComeOnline(final String from) throws XMPPException,
+			NotConnectedException {
+		ServiceDiscoveryManager sdm = ServiceDiscoveryManager
+				.getInstanceFor(SyncerService.this.theConnection);
+		System.out.println("sync, but waiting for android to be ready !!!");
+		try {
+			Thread.sleep(10000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		try {
+			DiscoverInfo disco = sdm.discoverInfo(from);
+			synchronized (this) {
+				toBeProcessed.remove(from);
+				if (disco.containsFeature("http://jlenet.de/histsync#disco")) {
+					str.add(from);
+					sync(from);
+				} else {
+					System.out.println("not supported!");
+					// sync not acceptable
+				}
+			}
+		} catch (NoResponseException e) {
+			System.out.println("not supported!");
+			// sync not acceptable
 		}
 
 	}

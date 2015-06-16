@@ -549,6 +549,7 @@ public class History {
 		for (int ctr = 0; ctr < 10; ctr++) {
 			if (ctr != 0) {
 				System.out.println("ctr: " + ctr);
+				new Error().printStackTrace(System.out);
 			}
 			PacketCollector collector = conn
 					.createPacketCollector(new AndFilter(new StanzaIdFilter(
