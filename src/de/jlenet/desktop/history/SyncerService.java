@@ -38,6 +38,10 @@ public class SyncerService {
 			public void processPacket(Stanza packet) {
 				Presence p = (Presence) packet;
 				final String from = p.getFrom();
+				System.out.println("processing0: " + from + " vs " + self);
+				System.out.println("processing0: "
+						+ XmppStringUtils.parseBareJid(from) + " <=> "
+						+ XmppStringUtils.parseBareJid(self));
 				if (XmppStringUtils.parseBareJid(from).equals(
 						XmppStringUtils.parseBareJid(self))
 						&& !from.equals(self)) {
@@ -45,8 +49,11 @@ public class SyncerService {
 					System.out.println(((Presence) packet).getType());
 					synchronized (this) {
 						if (((Presence) packet).getType() == Type.available) {
+							System.out.println("processing: " + from);
 							if (!str.contains(from)
 									&& !toBeProcessed.contains(from)) {
+								System.out.println("processing new jid: "
+										+ from);
 								toBeProcessed.add(from); // user is coming online
 								new Thread(new Runnable() {
 
@@ -145,6 +152,10 @@ public class SyncerService {
 			hss.setMessages(((HistoryLeafNode) local).getMessages());
 			HistorySyncSet response = (HistorySyncSet) History.getResponse(
 					theConnection, hss);
+			if (response.getType().equals(IQ.Type.error)) {
+				System.out.println("sync failed! Got error.");
+				return;
+			}
 			System.out.println(response.getMessages().size());
 			((HistoryLeafNode) local).getMessages().addAll(
 					response.getMessages());
@@ -180,7 +191,7 @@ public class SyncerService {
 				.getInstanceFor(SyncerService.this.theConnection);
 		System.out.println("sync, but waiting for android to be ready !!!");
 		try {
-			Thread.sleep(10000);
+			Thread.sleep(2000);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}

@@ -19,6 +19,7 @@ public class HistorySyncSet extends IQ {
 		this.hour = hour;
 		this.checksum = checksum;
 		this.update = update;
+		setType(Type.set);
 	}
 	public void addMessage(HistoryEntry message) {
 		messages.add(message);

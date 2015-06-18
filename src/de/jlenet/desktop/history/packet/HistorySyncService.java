@@ -4,13 +4,11 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.TreeSet;
 
-import org.jivesoftware.smack.SmackException.NotConnectedException;
-import org.jivesoftware.smack.StanzaListener;
 import org.jivesoftware.smack.XMPPConnection;
-import org.jivesoftware.smack.filter.StanzaTypeFilter;
+import org.jivesoftware.smack.iqrequest.IQRequestHandler;
 import org.jivesoftware.smack.packet.EmptyResultIQ;
 import org.jivesoftware.smack.packet.IQ;
-import org.jivesoftware.smack.packet.Stanza;
+import org.jivesoftware.smack.packet.IQ.Type;
 import org.jivesoftware.smack.packet.XMPPError;
 import org.jivesoftware.smack.packet.XMPPError.Condition;
 import org.jivesoftware.smack.provider.ProviderManager;
@@ -29,48 +27,55 @@ public class HistorySyncService {
 		final String jid = XmppStringUtils
 				.parseBareJid(theConnection.getUser());
 		// Hash fetch service
-		theConnection.addAsyncStanzaListener(new StanzaListener() {
+		theConnection.registerIQRequestHandler(new IQRequestHandler() {
 
 			@Override
-			public void processPacket(Stanza packet) {
-				try {
-					HistorySyncQuery query = (HistorySyncQuery) packet;
-					if (query.getType() != IQ.Type.get) {
-						return;
-					}
-					if (!XmppStringUtils.parseBareJid(packet.getFrom()).equals(
-							jid)) {
-						error(query, theConnection);
-						return;
-					}
-
-					HistorySyncHashes response = query.reply(h);
-					theConnection.sendStanza(response);
-				} catch (Throwable t) {
-					t.printStackTrace();
+			public IQ handleIQRequest(IQ iqRequest) {
+				HistorySyncQuery query = (HistorySyncQuery) iqRequest;
+				if (query.getType() != IQ.Type.get) {
+					throw new Error();
 				}
+				if (!XmppStringUtils.parseBareJid(iqRequest.getFrom()).equals(
+						jid)) {
+					return error(query);
+				}
+
+				HistorySyncHashes response = query.reply(h);
+				return response;
 			}
 
-		}, new StanzaTypeFilter(HistorySyncQuery.class));
-
-		// sync service
-		theConnection.addAsyncStanzaListener(new StanzaListener() {
+			@Override
+			public Mode getMode() {
+				return Mode.async;
+			}
 
 			@Override
-			public void processPacket(Stanza packet)
-					throws NotConnectedException {
-				HistorySyncSet sync = (HistorySyncSet) packet;
-				if (sync.getType() != IQ.Type.set) {
-					return;
-				}
-				if (!XmppStringUtils.parseBareJid(packet.getFrom()).equals(jid)) {
-					error(sync, theConnection);
-					return;
+			public Type getType() {
+				return Type.get;
+			}
+
+			@Override
+			public String getElement() {
+				return "query";
+			}
+
+			@Override
+			public String getNamespace() {
+				return "http://jlenet.de/histsync";
+			}
+
+		});
+
+		// sync service
+		theConnection.registerIQRequestHandler(new IQRequestHandler() {
+			@Override
+			public IQ handleIQRequest(IQ iqRequest) {
+				HistorySyncSet sync = (HistorySyncSet) iqRequest;
+				if (!XmppStringUtils.parseBareJid(iqRequest.getFrom()).equals(
+						jid)) {
+					return error(sync);
 				}
 
-				if (sync.isUpdate()) {
-					return;
-				}
 				if (Debug.ENABLED) {
 					System.out.println("sync pack");
 				}
@@ -124,7 +129,6 @@ public class HistorySyncService {
 				hss.setType(IQ.Type.result);
 				hss.setTo(sync.getFrom());
 				hss.setStanzaId(sync.getStanzaId());
-				theConnection.sendStanza(hss);
 				h.store();
 
 				if (Debug.ENABLED) {
@@ -132,24 +136,36 @@ public class HistorySyncService {
 					System.out.println("adding: " + forMe.size());
 					System.out.println("for other: " + forOther.size());
 				}
+				return hss;
 			}
-		}, new StanzaTypeFilter(HistorySyncSet.class));
-		theConnection.addAsyncStanzaListener(new StanzaListener() {
 
 			@Override
-			public void processPacket(Stanza packet)
-					throws NotConnectedException {
-				HistorySyncSet sync = (HistorySyncSet) packet;
-				if (sync.getType() != IQ.Type.set) {
-					return;
-				}
-				if (!XmppStringUtils.parseBareJid(packet.getFrom()).equals(jid)) {
-					error(sync, theConnection);
-					return;
-				}
+			public Mode getMode() {
+				return Mode.async;
+			}
 
-				if (!sync.isUpdate()) {
-					return;
+			@Override
+			public Type getType() {
+				return Type.set;
+			}
+			@Override
+			public String getElement() {
+				return "syncSet";
+			}
+
+			@Override
+			public String getNamespace() {
+				return "http://jlenet.de/histsync#syncSet";
+			}
+		});
+		theConnection.registerIQRequestHandler(new IQRequestHandler() {
+
+			@Override
+			public IQ handleIQRequest(IQ iqRequest) {
+				HistorySyncSet sync = (HistorySyncSet) iqRequest;
+				if (!XmppStringUtils.parseBareJid(iqRequest.getFrom()).equals(
+						jid)) {
+					return error(sync);
 				}
 				HistoryLeafNode hln = (HistoryLeafNode) h.getAnyBlock(
 						sync.getHour() * History.BASE, History.LEVELS);
@@ -178,13 +194,31 @@ public class HistorySyncService {
 				if (Debug.ENABLED) {
 					System.out.println("update was: " + status);
 				}
-				theConnection.sendStanza(hss);
-
 				if (Debug.ENABLED) {
 					System.out.println("now Have: " + hln.getMessages().size());
 				}
+				return hss;
 			}
-		}, new StanzaTypeFilter(HistorySyncSet.class));
+			@Override
+			public Type getType() {
+				return Type.set;
+			}
+
+			@Override
+			public Mode getMode() {
+				return Mode.async;
+			}
+			@Override
+			public String getElement() {
+				return "syncUpdate";
+			}
+
+			@Override
+			public String getNamespace() {
+				return "http://jlenet.de/histsync#syncUpdate";
+			}
+		});
+
 		ProviderManager.addIQProvider("query", "http://jlenet.de/histsync",
 				new HistorySyncQueryProvider());
 		ProviderManager.addIQProvider("hashes",
@@ -204,14 +238,13 @@ public class HistorySyncService {
 				.getInstanceFor(theConnection);
 		manager.addFeature("http://jlenet.de/histsync#disco");
 	}
-	private static void error(IQ packet, XMPPConnection theConnection)
-			throws NotConnectedException {
+	private static IQ error(IQ packet) {
 		IQ error = new EmptyResultIQ(packet);
 		error.setType(IQ.Type.error);
 		error.setError(new XMPPError(Condition.forbidden));
 		error.setStanzaId(packet.getStanzaId());
 		error.setTo(packet.getFrom());
-		theConnection.sendStanza(error);
+		return error;
 
 	}
 
